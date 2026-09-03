@@ -72,7 +72,9 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
-      - "${HTTP_PORT:-8080}:80"
+      # HTTP_BIND=0.0.0.0 publica o site para a rede local; use 127.0.0.1 para
+      # deixá-lo acessível só nesta máquina.
+      - "${HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-8080}:80"
     environment:
       MEDIA_BUCKET: ${MEDIA_BUCKET:-media}
       # Só a variável acima é interpolada no template; $host, $scheme etc. ficam intactos.

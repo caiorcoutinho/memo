@@ -72,6 +72,34 @@ O `settings.py` cai nos padrões antigos quando as variáveis não estão defini
 sem `POSTGRES_DB` usa o SQLite local, e sem `MEDIA_BUCKET` guarda as fotos em
 `media/`. Então `python manage.py runserver` continua funcionando como antes.
 
+### Acessando pela rede local
+
+O `runserver` deste projeto escuta em `0.0.0.0:8000` (o padrão do Django,
+127.0.0.1, só aceita a própria máquina), então o site já sai visível para os
+outros aparelhos da rede:
+
+```sh
+python manage.py runserver          # 0.0.0.0:8000
+hostname -I | awk '{print $1}'      # o IP para digitar no celular
+```
+
+Com isso o endereço no celular é `http://<esse-ip>:8000`. Para fechar o
+servidor na própria máquina, passe o endereço: `runserver 127.0.0.1:8000`.
+
+Enquanto `DJANGO_DEBUG` está ligado (o padrão fora do Docker), o
+`ALLOWED_HOSTS` aceita qualquer Host — não é preciso listar o IP, que muda de
+rede para rede. Com `DJANGO_DEBUG=0` a lista passa a valer, e aí o IP ou o
+domínio precisam estar em `DJANGO_ALLOWED_HOSTS`.
+
+Na stack Docker quem escuta é o gunicorn (já em `0.0.0.0:8000`, dentro do
+contêiner) com o nginx publicando a porta `HTTP_PORT` no host. O `HTTP_BIND`
+controla em qual interface: `0.0.0.0` (padrão) deixa o site visível na rede,
+`127.0.0.1` restringe à máquina. O console do MinIO segue preso ao
+`127.0.0.1:9001` de propósito.
+
+Se o site não abrir de outro aparelho, o firewall local é o suspeito:
+`sudo ufw allow 8000/tcp` (ou `8080/tcp`, no caso do Docker).
+
 ### Migrando dados de uma instalação em SQLite
 
 ```sh
