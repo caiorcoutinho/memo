@@ -13,7 +13,8 @@ from django.utils import timezone
 from django.utils.formats import date_format
 
 from .forms import MemoForm, PhotoEditForm, PhotoForm
-from .models import Memo, Photo
+from .models import (SHARE_EXPIRY_OPTIONS, Memo, Photo, ShareLink,
+                     expiry_from_key)
 from .utils import (METADATA_LABELS, compress_image, datetime_from_epoch_ms,
                     extract_metadata, extract_taken_at, to_web_jpeg)
 
@@ -25,6 +26,32 @@ def _humanize_bytes(size):
         if value < 1024 or unit == 'GB':
             return f'{value:.0f} {unit}' if unit == 'B' else f'{value:.1f} {unit}'
         value /= 1024
+
+
+def _share_url(obj):
+    """Volta para a página do memo/foto com o modal de compartilhamento aberto."""
+    return f'{obj.get_absolute_url()}?share=1'
+
+
+def _handle_share_link(request, **target):
+    """Cria ou revoga o link público de um memo/foto a partir do modal.
+
+    Recebe o alvo já validado como ``memo=`` ou ``photo=``. Devolve True quando
+    a ação era de link, para a view não seguir tratando como compartilhamento
+    por usuário.
+    """
+    action = request.POST.get('action')
+    if action == 'link_create':
+        ShareLink.objects.create(
+            created_by=request.user,
+            expires_at=expiry_from_key(request.POST.get('expires')),
+            **target)
+        return True
+    if action == 'link_remove':
+        # O filtro pelo alvo impede revogar o link de outra pessoa pelo id.
+        ShareLink.objects.filter(pk=request.POST.get('link') or 0, **target).delete()
+        return True
+    return False
 
 
 def _visible_memos(user):
@@ -125,6 +152,9 @@ def memo_detail(request, pk):
         'photos': memo.photos.all(),
         'can_edit': memo.can_edit(request.user),
         'is_owner': is_owner,
+        # Resumo mostrado no botão de compartilhar, sem abrir o modal.
+        'share_people': memo.shared_view.count() + memo.shared_edit.count(),
+        'expiry_options': SHARE_EXPIRY_OPTIONS,
     })
 
 
@@ -146,6 +176,8 @@ def memo_edit(request, pk):
         'form': form,
         'memo': memo,
         'is_owner': is_owner,
+        'share_people': memo.shared_view.count() + memo.shared_edit.count(),
+        'expiry_options': SHARE_EXPIRY_OPTIONS,
     })
 
 
@@ -154,6 +186,8 @@ def memo_share(request, pk):
     # Só o dono define o compartilhamento do memo.
     memo = get_object_or_404(Memo, pk=pk, owner=request.user)
     if request.method == 'POST':
+        if _handle_share_link(request, memo=memo):
+            return redirect(_share_url(memo))
         action = request.POST.get('action')
         role = request.POST.get('role')
         rel = {'view': memo.shared_view, 'edit': memo.shared_edit}.get(role)
@@ -170,7 +204,7 @@ def memo_share(request, pk):
             elif action == 'remove':
                 rel.remove(target)
                 messages.success(request, f'{target.username} não tem mais acesso ao memo.')
-    return redirect(memo)
+    return redirect(_share_url(memo))
 
 
 @login_required
@@ -292,6 +326,10 @@ def photo_detail(request, pk):
         'photo': photo,
         'can_edit': photo.can_edit(request.user),
         'is_owner': is_owner,
+        # Crédito de quem compartilhou: só faz sentido para quem não é o dono.
+        'shared_by': None if is_owner else photo.owner.username,
+        'share_people': photo.shared_with.count(),
+        'expiry_options': SHARE_EXPIRY_OPTIONS,
     })
 
 
@@ -333,6 +371,8 @@ def photo_edit(request, pk):
         'form': form,
         'photo': photo,
         'is_owner': is_owner,
+        'share_people': photo.shared_with.count(),
+        'expiry_options': SHARE_EXPIRY_OPTIONS,
     })
 
 
@@ -341,6 +381,8 @@ def photo_share(request, pk):
     # Só o dono compartilha a foto (sempre como somente leitura).
     photo = get_object_or_404(Photo, pk=pk, owner=request.user)
     if request.method == 'POST':
+        if _handle_share_link(request, photo=photo):
+            return redirect(_share_url(photo))
         action = request.POST.get('action')
         target = (User.objects.exclude(pk=request.user.pk)
                   .filter(pk=request.POST.get('user') or 0).first())
@@ -351,7 +393,7 @@ def photo_share(request, pk):
             elif action == 'remove':
                 photo.shared_with.remove(target)
                 messages.success(request, f'{target.username} não tem mais acesso à foto.')
-    return redirect(photo)
+    return redirect(_share_url(photo))
 
 
 @login_required
@@ -378,6 +420,50 @@ def photo_delete(request, pk):
         messages.success(request, 'Foto excluída.')
         return redirect(destino if destino else 'core:timeline')
     return redirect(photo)
+
+
+def _open_link(token):
+    """Link público pelo token, ou 404 quando não existe / já foi revogado."""
+    link = (ShareLink.objects.select_related('memo', 'photo', 'created_by')
+            .filter(token=token).first())
+    if link is None:
+        raise Http404
+    return link
+
+
+def public_share(request, token):
+    """Página aberta de um link público: o memo inteiro ou uma foto avulsa.
+
+    Não pede login — quem tem o endereço vê o conteúdo em modo leitura. O
+    prazo é conferido a cada acesso: link vencido devolve 410 com um aviso,
+    não os dados.
+    """
+    link = _open_link(token)
+    if link.is_expired:
+        return render(request, 'memo/public_expired.html', {'link': link}, status=410)
+    if link.photo_id:
+        return render(request, 'memo/public_photo.html', {
+            'link': link,
+            'photo': link.photo,
+        })
+    return render(request, 'memo/public_memo.html', {
+        'link': link,
+        'memo': link.memo,
+        'photos': link.memo.photos.all(),
+    })
+
+
+def public_share_photo(request, token, pk):
+    """Uma foto vista de dentro de um link público de memo."""
+    link = _open_link(token)
+    if link.is_expired:
+        return render(request, 'memo/public_expired.html', {'link': link}, status=410)
+    # A foto precisa estar no memo do link: o token não abre o acervo inteiro,
+    # e um link de foto avulsa não vira chave para nenhum outro caminho.
+    if not link.memo_id:
+        raise Http404
+    photo = get_object_or_404(Photo, pk=pk, memo_id=link.memo_id)
+    return render(request, 'memo/public_photo.html', {'link': link, 'photo': photo})
 
 
 def register(request):

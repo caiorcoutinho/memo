@@ -1,16 +1,16 @@
 import io
 import shutil
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from .models import Memo, Photo
+from .models import Memo, Photo, ShareLink
 from .utils import METADATA_KEYS, MAX_SIDE, extract_metadata, extract_taken_at
 
 MEDIA_ROOT = tempfile.mkdtemp()
@@ -431,7 +431,7 @@ class MemoFlowTests(TestCase):
         friend = User.objects.create_user('amiga', password='x')
         resp = self.client.post(reverse('core:memo_share', args=[memo.pk]),
                                 {'action': 'add', 'role': 'edit', 'user': friend.pk})
-        self.assertRedirects(resp, memo.get_absolute_url())
+        self.assertRedirects(resp, memo.get_absolute_url() + '?share=1')
         self.assertTrue(memo.can_edit(friend))
         # Remover devolve o acesso.
         self.client.post(reverse('core:memo_share', args=[memo.pk]),
@@ -454,7 +454,7 @@ class MemoFlowTests(TestCase):
         friend = User.objects.create_user('amiga3', password='x')
         resp = self.client.post(reverse('core:photo_share', args=[photo.pk]),
                                 {'action': 'add', 'user': friend.pk})
-        self.assertRedirects(resp, photo.get_absolute_url())
+        self.assertRedirects(resp, photo.get_absolute_url() + '?share=1')
         self.assertTrue(photo.can_view(friend))
 
     def test_memo_share_add_edit_supersedes_view(self):
@@ -467,6 +467,98 @@ class MemoFlowTests(TestCase):
                          {'action': 'add', 'role': 'edit', 'user': friend.pk})
         self.assertFalse(memo.shared_view.filter(pk=friend.pk).exists())
         self.assertTrue(memo.shared_edit.filter(pk=friend.pk).exists())
+
+    # ── Links públicos ───────────────────────────────────────────────────
+
+    def _make_link(self, target_url, expires='7d'):
+        return self.client.post(target_url, {'action': 'link_create',
+                                             'expires': expires})
+
+    def test_public_memo_link_opens_without_login(self):
+        memo = Memo.objects.create(owner=self.user, name='Viagem')
+        photo = Photo.objects.create(owner=self.user, memo=memo, name='onda',
+                                     image='photos/x.jpg', taken_at=timezone.now())
+        resp = self._make_link(reverse('core:memo_share', args=[memo.pk]))
+        self.assertRedirects(resp, memo.get_absolute_url() + '?share=1',
+                             fetch_redirect_response=False)
+        link = ShareLink.objects.get(memo=memo)
+        # Prazo de 7 dias e endereço aberto a quem não está logado.
+        self.assertAlmostEqual((link.expires_at - timezone.now()).days, 6)
+        anon = Client()
+        resp = anon.get(link.get_absolute_url())
+        self.assertContains(resp, 'Viagem')
+        # A grade aponta para a foto dentro do próprio link.
+        foto_url = reverse('core:public_share_photo', args=[link.token, photo.pk])
+        self.assertContains(resp, foto_url)
+        self.assertContains(anon.get(foto_url), 'onda')
+        # Página aberta é só leitura: nada de editar ou compartilhar.
+        self.assertNotContains(anon.get(foto_url), 'data-share-open')
+
+    def test_public_memo_link_does_not_open_other_photos(self):
+        memo = Memo.objects.create(owner=self.user, name='Viagem')
+        outra = Photo.objects.create(owner=self.user, name='de fora',
+                                     image='photos/x.jpg', taken_at=timezone.now())
+        self._make_link(reverse('core:memo_share', args=[memo.pk]))
+        link = ShareLink.objects.get(memo=memo)
+        resp = Client().get(reverse('core:public_share_photo',
+                                    args=[link.token, outra.pk]))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_public_photo_link_without_expiry(self):
+        photo = Photo.objects.create(owner=self.user, name='solta',
+                                     image='photos/x.jpg', taken_at=timezone.now())
+        self._make_link(reverse('core:photo_share', args=[photo.pk]), expires='never')
+        link = ShareLink.objects.get(photo=photo)
+        self.assertIsNone(link.expires_at)
+        self.assertContains(Client().get(link.get_absolute_url()), 'solta')
+
+    def test_expired_link_is_gone(self):
+        memo = Memo.objects.create(owner=self.user, name='Antigo')
+        self._make_link(reverse('core:memo_share', args=[memo.pk]), expires='1h')
+        link = ShareLink.objects.get(memo=memo)
+        link.expires_at = timezone.now() - timedelta(minutes=1)
+        link.save()
+        resp = Client().get(link.get_absolute_url())
+        self.assertEqual(resp.status_code, 410)
+        self.assertContains(resp, 'expirou', status_code=410)
+        # E o modal não lista mais o link vencido.
+        self.assertContains(self.client.get(memo.get_absolute_url()),
+                            'nenhum link ativo')
+
+    def test_unknown_expiry_falls_back_to_default(self):
+        # Prazo fora da lista nunca vira link eterno.
+        memo = Memo.objects.create(owner=self.user, name='Padrão')
+        self._make_link(reverse('core:memo_share', args=[memo.pk]),
+                        expires='para sempre')
+        self.assertIsNotNone(ShareLink.objects.get(memo=memo).expires_at)
+
+    def test_owner_can_revoke_link(self):
+        memo = Memo.objects.create(owner=self.user, name='Revogar')
+        self._make_link(reverse('core:memo_share', args=[memo.pk]))
+        link = ShareLink.objects.get(memo=memo)
+        self.client.post(reverse('core:memo_share', args=[memo.pk]),
+                         {'action': 'link_remove', 'link': link.pk})
+        self.assertFalse(ShareLink.objects.filter(pk=link.pk).exists())
+        self.assertEqual(Client().get(link.get_absolute_url()).status_code, 404)
+
+    def test_non_owner_cannot_create_or_revoke_link(self):
+        owner = User.objects.create_user('dono5', password='x')
+        memo = Memo.objects.create(owner=owner, name='Alheio')
+        memo.shared_edit.add(self.user)  # nem quem edita cria link
+        resp = self._make_link(reverse('core:memo_share', args=[memo.pk]))
+        self.assertEqual(resp.status_code, 404)
+        self.assertFalse(ShareLink.objects.exists())
+
+    def test_link_revoke_does_not_cross_targets(self):
+        # O id do link não basta: ele precisa pertencer ao alvo da rota.
+        memo = Memo.objects.create(owner=self.user, name='Meu')
+        photo = Photo.objects.create(owner=self.user, name='minha',
+                                     image='photos/x.jpg', taken_at=timezone.now())
+        self._make_link(reverse('core:photo_share', args=[photo.pk]))
+        link = ShareLink.objects.get(photo=photo)
+        self.client.post(reverse('core:memo_share', args=[memo.pk]),
+                         {'action': 'link_remove', 'link': link.pk})
+        self.assertTrue(ShareLink.objects.filter(pk=link.pk).exists())
 
     def test_user_search(self):
         User.objects.create_user('mariana', password='x')

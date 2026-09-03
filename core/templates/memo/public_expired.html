@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Link expirado{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex, nofollow" />{% endblock %}
+
+{% block content %}
+  <div class="auth">
+    <h1>Este link expirou</h1>
+    <p class="auth-sub">
+      O prazo escolhido por quem compartilhou terminou
+      {% if link.expires_at %}em {{ link.expires_at|date:"d/m/Y, H:i" }}{% endif %}
+      e o conteúdo não está mais aberto. Peça um link novo a
+      {{ link.created_by.username }}.
+    </p>
+    <div class="form-actions">
+      <a href="{% url 'core:home' %}" class="btn">Ir para o início</a>
+    </div>
+  </div>
+{% endblock %}

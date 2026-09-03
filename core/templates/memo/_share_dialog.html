@@ -1,0 +1,177 @@
+{% comment %}
+Botão "Compartilhar" + modal com as duas formas de dar acesso: por usuário com
+conta (chips + busca) e por link público com prazo de expiração.
+
+Espera `obj` (o memo ou a foto), `kind` ("memo" ou "photo"), `share_action`
+(URL que recebe os POSTs) e `expiry_options`. Só aparece para o dono.
+{% endcomment %}
+{% if is_owner %}
+<div class="share-row">
+  <button type="button" class="btn share-open" data-share-open aria-haspopup="dialog">
+    <svg class="ico" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="18" cy="5" r="2.6" /><circle cx="6" cy="12" r="2.6" /><circle cx="18" cy="19" r="2.6" />
+      <path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4" />
+    </svg>
+    <span class="share-open-text">
+      <span>Compartilhar</span>
+      {% comment %}Resumo do que já está compartilhado, para não precisar abrir
+      o modal. Sem espaços em volta: vazio, o :empty do CSS some com ele.{% endcomment %}
+      {% with links=obj.active_share_links.count %}<span class="share-summary">{% if share_people %}{{ share_people }} pessoa{{ share_people|pluralize }}{% if links %} · {% endif %}{% endif %}{% if links %}{{ links }} link{{ links|pluralize }} público{{ links|pluralize }}{% endif %}</span>{% endwith %}
+    </span>
+  </button>
+</div>
+
+<dialog class="share-modal" data-share-modal
+        aria-label="Compartilhar {% if kind == 'memo' %}memo{% else %}foto{% endif %}">
+  <div class="share-head">
+    <h2>Compartilhar {% if kind == 'memo' %}memo{% else %}foto{% endif %}</h2>
+    <button type="button" class="share-close" data-share-close aria-label="Fechar">×</button>
+  </div>
+
+  <div class="share-body" data-share-body>
+    <section class="share-section">
+      <h3 class="share-section-title">
+        <svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19" />
+          <circle cx="10" cy="8" r="3" />
+          <path d="M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M16 5.1a3 3 0 0 1 0 5.8" />
+        </svg>
+        Pessoas com conta
+      </h3>
+      <p class="helptext">
+        {% if kind == 'memo' %}
+          Pesquise pelo nome de usuário e escolha o acesso. Quem pode editar também
+          visualiza, e enxerga todas as fotos do memo.
+        {% else %}
+          Pesquise pelo nome de usuário. Quem você adicionar poderá ver esta foto
+          (somente leitura).
+        {% endif %}
+      </p>
+
+      {% if kind == 'memo' %}
+        <div class="share-group">
+          <span class="share-group-label">Pode editar</span>
+          <ul class="chip-list">
+            {% for u in obj.shared_edit.all %}
+              <li class="chip">
+                <span>{{ u.username }}</span>
+                <form method="post" action="{{ share_action }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove">
+                  <input type="hidden" name="role" value="edit">
+                  <input type="hidden" name="user" value="{{ u.pk }}">
+                  <button type="submit" class="chip-x" aria-label="Remover {{ u.username }}" title="Remover">×</button>
+                </form>
+              </li>
+            {% empty %}<li class="chip-empty">ninguém</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="share-group">
+          <span class="share-group-label">Pode visualizar</span>
+          <ul class="chip-list">
+            {% for u in obj.shared_view.all %}
+              <li class="chip">
+                <span>{{ u.username }}</span>
+                <form method="post" action="{{ share_action }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove">
+                  <input type="hidden" name="role" value="view">
+                  <input type="hidden" name="user" value="{{ u.pk }}">
+                  <button type="submit" class="chip-x" aria-label="Remover {{ u.username }}" title="Remover">×</button>
+                </form>
+              </li>
+            {% empty %}<li class="chip-empty">ninguém</li>{% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="share-group">
+          <span class="share-group-label">Com acesso</span>
+          <ul class="chip-list">
+            {% for u in obj.shared_with.all %}
+              <li class="chip">
+                <span>{{ u.username }}</span>
+                <form method="post" action="{{ share_action }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove">
+                  <input type="hidden" name="user" value="{{ u.pk }}">
+                  <button type="submit" class="chip-x" aria-label="Remover {{ u.username }}" title="Remover">×</button>
+                </form>
+              </li>
+            {% empty %}<li class="chip-empty">ninguém</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="share-search" data-search-url="{% url 'core:user_search' %}"
+           data-action-url="{{ share_action }}"
+           data-roles="{% if kind == 'memo' %}1{% else %}0{% endif %}"
+           data-csrf="{{ csrf_token }}">
+        <input type="text" class="share-input" placeholder="Pesquisar usuário…" autocomplete="off" aria-label="Pesquisar usuário">
+        <div class="share-results" hidden></div>
+      </div>
+    </section>
+
+    <section class="share-section">
+      <h3 class="share-section-title">
+        {# Elo de corrente: aqui o acesso é o endereço, não a pessoa. #}
+        <svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10.6 13.4a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.3 1.3" />
+          <path d="M13.4 10.6a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.3-1.3" />
+        </svg>
+        Link público
+      </h3>
+      <p class="helptext">
+        Qualquer pessoa com o endereço vê
+        {% if kind == 'memo' %}este memo e suas fotos{% else %}esta foto{% endif %}
+        sem precisar de conta. Escolha por quanto tempo o link vale.
+      </p>
+
+      <ul class="link-list">
+        {% for link in obj.active_share_links %}
+          <li class="link-item">
+            <div class="link-row">
+              <input class="link-url" type="text" readonly aria-label="Endereço do link público"
+                     value="{{ request.scheme }}://{{ request.get_host }}{{ link.get_absolute_url }}">
+              <button type="button" class="btn link-copy" data-copy>Copiar</button>
+              <form method="post" action="{{ share_action }}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="link_remove">
+                <input type="hidden" name="link" value="{{ link.pk }}">
+                <button type="submit" class="chip-x" title="Revogar link" aria-label="Revogar link">×</button>
+              </form>
+            </div>
+            <span class="link-meta">
+              {% if link.expires_at %}
+                expira em {{ link.expires_at|timeuntil }} — {{ link.expires_at|date:"d/m/Y, H:i" }}
+              {% else %}
+                não expira
+              {% endif %}
+            </span>
+          </li>
+        {% empty %}
+          <li class="chip-empty">nenhum link ativo</li>
+        {% endfor %}
+      </ul>
+
+      <form method="post" action="{{ share_action }}" class="link-create">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="link_create">
+        <label class="link-expiry">
+          <span class="share-group-label">Expira em</span>
+          <select name="expires" aria-label="Prazo de expiração do link">
+            {% for chave, rotulo, _duracao in expiry_options %}
+              <option value="{{ chave }}"{% if chave == '7d' %} selected{% endif %}>{{ rotulo }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button type="submit" class="btn btn-solid">Criar link</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="share-foot">
+    <button type="button" class="btn" data-share-close>Concluído</button>
+  </div>
+</dialog>
+{% include "memo/_share_assets.html" %}
+{% endif %}

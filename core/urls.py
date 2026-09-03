@@ -22,6 +22,11 @@ urlpatterns = [
     path('memo/<int:pk>/delete/', views.memo_delete, name='memo_delete'),
     path('memo/<int:pk>/share/', views.memo_share, name='memo_share'),
 
+    # Links públicos (sem login): o token é a credencial.
+    path('l/<str:token>/', views.public_share, name='public_share'),
+    path('l/<str:token>/foto/<int:pk>/', views.public_share_photo,
+         name='public_share_photo'),
+
     # Autenticação simples
     path('register/', views.register, name='register'),
 ]

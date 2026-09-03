@@ -1,10 +1,65 @@
-{% comment %}Estilos e script do autocomplete de compartilhamento.{% endcomment %}
+{% comment %}Estilos e script do modal de compartilhamento (busca de usuário e link público).{% endcomment %}
 <style>
-  .share-title {
-    display: flex; align-items: center; gap: 0.5rem;
-    font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 0.35rem;
+  /* ── Botão que abre o modal ─────────────────────────────────────────── */
+  .share-row { margin: 1.25rem 0; }
+  .share-open { align-items: center; gap: 0.6rem; }
+  .share-open .ico { color: var(--ink-faint); }
+  .share-open-text { display: flex; align-items: baseline; gap: 0.5rem; }
+  .share-summary { font-size: 0.8125rem; font-weight: 400; color: var(--ink-soft); }
+  .share-summary:empty { display: none; }
+
+  /* ── Modal ──────────────────────────────────────────────────────────── */
+  .share-modal {
+    width: min(34rem, calc(100vw - 2rem));
+    max-height: min(85vh, 46rem);
+    padding: 0;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-box);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--lift-high);
+    overflow: hidden;
   }
-  .share-title .ico { color: var(--ink-faint); }
+  .share-modal::backdrop { background: rgba(8, 11, 15, 0.55); }
+  .share-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem 1.25rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .share-head h2 {
+    margin: 0; font-size: 1rem; font-weight: 600;
+    letter-spacing: -0.01em; color: var(--ink);
+  }
+  .share-close {
+    border: none; background: transparent; color: var(--ink-faint);
+    font-size: 1.4rem; line-height: 1; cursor: pointer;
+    padding: 0 0.25rem; border-radius: 4px;
+  }
+  .share-close:hover { color: var(--ink); }
+  /* Rolagem só no miolo: cabeçalho e rodapé ficam sempre visíveis. */
+  .share-body { padding: 1.15rem 1.25rem 1.25rem; overflow-y: auto; max-height: 62vh; }
+  .share-foot {
+    display: flex; justify-content: flex-end;
+    padding: 0.9rem 1.25rem 1.1rem;
+    border-top: 1px solid var(--rule);
+  }
+  /* As mensagens do Django são movidas para cá quando o modal abre sozinho. */
+  .share-body .messages { margin-bottom: 1rem; }
+
+  .share-section + .share-section {
+    margin-top: 1.5rem; padding-top: 1.35rem; border-top: 1px solid var(--rule);
+  }
+  .share-section-title {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.9375rem; font-weight: 600; color: var(--ink); margin-bottom: 0.2rem;
+  }
+  .share-section-title .ico { color: var(--ink-faint); }
+  .share-section .helptext {
+    display: block; font-size: 0.8125rem; color: var(--ink-soft);
+    line-height: 1.45; margin-bottom: 0.9rem;
+  }
+
+  /* ── Pessoas ────────────────────────────────────────────────────────── */
   .share-group { margin-bottom: 1rem; }
   .share-group-label {
     display: block; font-size: 0.8125rem; font-weight: 550;
@@ -29,10 +84,17 @@
   .chip-x:hover { color: var(--danger); background: var(--paper); }
   .chip-empty { font-family: var(--annot); font-style: italic; font-size: 0.875rem; color: var(--ink-faint); }
   .share-search { position: relative; margin-top: 0.25rem; }
-  .share-input { width: 100%; }
+  .share-input, .link-url, .link-expiry select {
+    width: 100%; font-size: 0.9375rem; font-family: inherit; line-height: 1.45;
+    color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule-strong); border-radius: var(--r-ctl);
+    padding: 0.5rem 0.7rem;
+  }
+  .share-input:focus, .link-url:focus, .link-expiry select:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash);
+  }
   .share-results {
     position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
-    /* Antes apontava para --card, que não existe: o menu ficava transparente. */
     background: var(--surface);
     border: 1px solid var(--rule-strong);
     border-radius: var(--r-ctl);
@@ -50,9 +112,91 @@
     padding: 0.7rem 0.75rem; font-size: 0.875rem; color: var(--ink-faint);
     font-family: var(--annot); font-style: italic;
   }
+
+  /* ── Links públicos ─────────────────────────────────────────────────── */
+  .link-list { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.7rem; }
+  .link-item {
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--r-ctl);
+    background: var(--surface-sunk);
+  }
+  .link-row { display: flex; align-items: center; gap: 0.4rem; }
+  .link-row form { margin: 0; display: flex; }
+  /* O endereço é para copiar, não para ler: monoespaçado e sem quebrar a linha. */
+  .link-url { font-family: var(--mono); font-size: 0.8125rem; text-overflow: ellipsis; }
+  .link-copy { flex: 0 0 auto; padding: 0.45rem 0.7rem; font-size: 0.8125rem; }
+  .link-meta {
+    display: block; margin-top: 0.4rem;
+    font-family: var(--annot); font-style: italic;
+    font-size: 0.8125rem; color: var(--ink-soft);
+  }
+  .link-create { display: flex; align-items: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+  .link-expiry { flex: 1 1 10rem; }
+  .link-expiry .share-group-label { margin-bottom: 0.3rem; }
 </style>
 <script>
 (function () {
+  // ── Modal ────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-share-modal]:not([data-bound])').forEach(function (modal) {
+    modal.setAttribute('data-bound', '1');
+    const abrir = document.querySelector('[data-share-open]');
+
+    function open() {
+      // showModal dá foco preso e fechamento por Esc de graça; o fallback
+      // atende navegadores sem suporte a <dialog>.
+      if (modal.showModal) modal.showModal();
+      else modal.setAttribute('open', '');
+    }
+    function close() {
+      if (modal.close) modal.close();
+      else modal.removeAttribute('open');
+    }
+
+    if (abrir) abrir.addEventListener('click', open);
+    modal.querySelectorAll('[data-share-close]').forEach(function (b) {
+      b.addEventListener('click', close);
+    });
+    // Clique fora do conteúdo (no backdrop) também fecha.
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+
+    // Toda ação de compartilhamento volta com ?share=1: o modal reabre no
+    // ponto em que estava e leva junto as mensagens, que ficariam escondidas
+    // atrás do backdrop.
+    if (new URLSearchParams(location.search).get('share') === '1') {
+      const corpo = modal.querySelector('[data-share-body]');
+      const msgs = document.querySelector('main .messages');
+      if (corpo && msgs) corpo.insertBefore(msgs, corpo.firstChild);
+      open();
+      history.replaceState(null, '', location.pathname);
+    }
+  });
+
+  // ── Copiar o endereço do link ────────────────────────────────────────
+  document.querySelectorAll('[data-copy]:not([data-bound])').forEach(function (btn) {
+    btn.setAttribute('data-bound', '1');
+    btn.addEventListener('click', function () {
+      const campo = btn.closest('.link-row').querySelector('.link-url');
+      const feito = function () {
+        const antes = btn.textContent;
+        btn.textContent = 'Copiado';
+        setTimeout(function () { btn.textContent = antes; }, 1600);
+      };
+      // A API de clipboard só existe em contexto seguro; servido em HTTP na
+      // rede local, o caminho que funciona é selecionar e usar execCommand.
+      campo.select();
+      campo.setSelectionRange(0, campo.value.length);
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(campo.value).then(feito, function () {
+          if (document.execCommand('copy')) feito();
+        });
+      } else if (document.execCommand('copy')) {
+        feito();
+      }
+    });
+  });
+
+  // ── Busca de usuários ────────────────────────────────────────────────
   document.querySelectorAll('.share-search:not([data-bound])').forEach(function (box) {
     box.setAttribute('data-bound', '1');
     const input = box.querySelector('.share-input');

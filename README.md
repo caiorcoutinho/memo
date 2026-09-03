@@ -88,6 +88,23 @@ mesma exposição que o Django já fazia servindo `MEDIA_ROOT` em desenvolviment
 quem tiver o link da foto consegue abri-la, mesmo sem estar logado. As telas de
 memo continuam protegidas por login e pelas regras de compartilhamento.
 
+### Compartilhamento
+
+O botão **Compartilhar**, logo abaixo da descrição do memo ou da foto, abre um
+modal com as duas formas de dar acesso:
+
+- **Pessoas com conta** — busca pelo nome de usuário. No memo o acesso é
+  *visualizar* ou *editar* (quem edita também visualiza); a foto avulsa é
+  sempre somente leitura.
+- **Link público** — um endereço `/l/<token>/` que abre o memo (com suas fotos)
+  ou a foto sem nenhum login. O prazo é escolhido na criação: 1 hora, 24 horas,
+  7 dias, 30 dias ou sem expiração. Depois do prazo o endereço devolve um aviso
+  de link expirado, e revogar o link o apaga de vez.
+
+Um link de memo só abre as fotos daquele memo, e as páginas públicas são
+somente leitura: não mostram os botões de editar nem de compartilhar. Só o dono
+cria e revoga links.
+
 ### Metadados das fotos
 
 Cada foto tem sete grupos de metadados que podem ser habilitados ou

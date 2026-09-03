@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ memo.name }}{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex, nofollow" />{% endblock %}
+
+{% block content %}
+  {% include "memo/_public_banner.html" %}
+
+  <h1 class="page-title">{{ memo.name }}</h1>
+  {% if memo.description %}<p class="page-sub">{{ memo.description }}</p>{% endif %}
+
+  <div class="section-head">
+    <h2>{{ photos.count }} foto{{ photos.count|pluralize }}</h2>
+  </div>
+
+  {% if photos %}
+    {% include "memo/_photo_grid.html" with photos=photos show_memo=False public_token=link.token %}
+  {% else %}
+    <div class="empty">Este memo ainda está vazio.</div>
+  {% endif %}
+{% endblock %}

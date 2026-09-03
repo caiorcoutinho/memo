@@ -1,6 +1,11 @@
+import secrets
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
+from django.utils import timezone
 
 from .utils import METADATA_FIELDS, clean_metadata_fields, default_metadata_fields
 
@@ -62,6 +67,11 @@ class Memo(models.Model):
 
     def can_edit(self, user):
         return self.owner_id == user.pk or self.shared_edit.filter(pk=user.pk).exists()
+
+    @property
+    def active_share_links(self):
+        """Links públicos ainda válidos — o modal de compartilhamento os lista."""
+        return self.share_links.active()
 
 
 class Photo(models.Model):
@@ -160,3 +170,100 @@ class Photo(models.Model):
         if self.owner_id == user.pk:
             return True
         return bool(self.memo_id) and self.memo.can_edit(user)
+
+    @property
+    def active_share_links(self):
+        """Links públicos ainda válidos — o modal de compartilhamento os lista."""
+        return self.share_links.active()
+
+
+# Prazos oferecidos ao criar um link público: chave, rótulo e duração.
+# A duração `None` é o link que não expira.
+SHARE_EXPIRY_OPTIONS = [
+    ('1h', '1 hora', timedelta(hours=1)),
+    ('24h', '24 horas', timedelta(days=1)),
+    ('7d', '7 dias', timedelta(days=7)),
+    ('30d', '30 dias', timedelta(days=30)),
+    ('never', 'não expira', None),
+]
+SHARE_EXPIRY_DEFAULT = '7d'
+
+
+def expiry_from_key(key):
+    """Momento de expiração para uma das chaves acima (`None` = não expira).
+
+    Chave desconhecida cai no padrão — quem manda um valor fora da lista fica
+    com um prazo curto, nunca com um link eterno por acidente.
+    """
+    durations = {chave: duracao for chave, _rotulo, duracao in SHARE_EXPIRY_OPTIONS}
+    if key not in durations:
+        key = SHARE_EXPIRY_DEFAULT
+    duracao = durations[key]
+    return timezone.now() + duracao if duracao else None
+
+
+def new_share_token():
+    """Token do link público: aleatório e grande o bastante para não se adivinhar."""
+    return secrets.token_urlsafe(16)
+
+
+class ShareLinkQuerySet(models.QuerySet):
+    def active(self):
+        """Só os links que ainda valem (sem prazo ou com prazo no futuro)."""
+        return self.filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
+
+
+class ShareLink(models.Model):
+    """Link público de leitura para um memo ou uma foto.
+
+    Quem tem o endereço vê o conteúdo sem entrar em nenhuma conta — é a forma
+    de mostrar uma foto para quem não usa o memo. O prazo é escolhido na
+    criação: `expires_at` nulo significa que o link não expira. Revogar é
+    apagar a linha, e aí o endereço deixa de existir.
+    """
+    memo = models.ForeignKey(
+        Memo, null=True, blank=True, on_delete=models.CASCADE,
+        related_name='share_links', verbose_name='memo',
+    )
+    photo = models.ForeignKey(
+        Photo, null=True, blank=True, on_delete=models.CASCADE,
+        related_name='share_links', verbose_name='foto',
+    )
+    token = models.CharField(
+        'token', max_length=64, unique=True, default=new_share_token, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='share_links', verbose_name='criado por',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        'expira em', null=True, blank=True,
+        help_text='Em branco, o link não expira.',
+    )
+
+    objects = ShareLinkQuerySet.as_manager()
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            # Um link aponta para um memo OU para uma foto, nunca para os dois.
+            models.CheckConstraint(
+                condition=Q(memo__isnull=False, photo__isnull=True)
+                | Q(memo__isnull=True, photo__isnull=False),
+                name='sharelink_memo_xor_photo',
+            ),
+        ]
+
+    def __str__(self):
+        return f'link para {self.target}'
+
+    @property
+    def target(self):
+        return self.memo or self.photo
+
+    @property
+    def is_expired(self):
+        return bool(self.expires_at and self.expires_at <= timezone.now())
+
+    def get_absolute_url(self):
+        return reverse('core:public_share', args=[self.token])

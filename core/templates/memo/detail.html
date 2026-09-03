@@ -15,6 +15,9 @@
   {% endif %}
   {% if memo.description %}<p class="page-sub">{{ memo.description }}</p>{% endif %}
 
+  {% url 'core:memo_share' memo.pk as memo_share_url %}
+  {% include "memo/_share_dialog.html" with obj=memo kind="memo" share_action=memo_share_url %}
+
   <div class="section-head">
     <h2>{{ photos.count }} foto{{ photos.count|pluralize }}</h2>
     {% if can_edit %}
@@ -35,6 +38,4 @@
   {% else %}
     <div class="empty">Este memo ainda está vazio.</div>
   {% endif %}
-
-  {% include "memo/_memo_share.html" %}
 {% endblock %}
