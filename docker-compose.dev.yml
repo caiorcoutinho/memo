@@ -1,0 +1,45 @@
+# Modo desenvolvimento: o código do host entra no contêiner, então editar um
+# arquivo aqui muda o site lá — sem rebuild.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# O que muda em relação à stack normal:
+#   • runserver no lugar do gunicorn, com o autoreload do Django;
+#   • o diretório do projeto é montado em /app;
+#   • DEBUG ligado (o Django deixa de guardar os templates em cache, então
+#     mexer no HTML/CSS aparece no F5 seguinte, sem reiniciar nada);
+#   • o nginx para de mandar o navegador guardar /static/ e /media/.
+#
+# O endereço continua sendo o mesmo da stack normal (HTTP_PORT, 8080 por
+# padrão), porque as fotos são servidas pelo nginx em /media/.
+
+services:
+  web:
+    # O autoreload cuida do .py; o template recarrega sozinho com DEBUG=1.
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    environment:
+      DJANGO_DEBUG: "1"
+      # O .env fixa a lista de hosts para produção. Em desenvolvimento o site é
+      # aberto pelo IP da máquina (que muda de rede para rede), então aqui ela
+      # volta a aceitar qualquer Host — o `environment` vence o `env_file`.
+      DJANGO_ALLOWED_HOSTS: "*"
+    volumes:
+      # O projeto do host por cima da cópia da imagem.
+      - .:/app
+      # O staticfiles continua no volume: o nginx lê dele, e assim o
+      # collectstatic não suja o diretório do projeto.
+      - static_files:/app/staticfiles
+    # Um traceback ou um breakpoint() ficam utilizáveis com `docker attach`.
+    stdin_open: true
+    tty: true
+    # Sem reinício automático: em desenvolvimento é melhor o contêiner parar e
+    # deixar o erro à vista do que reiniciar em looping.
+    restart: "no"
+
+  nginx:
+    environment:
+      # `-1` manda o navegador não guardar nada: o F5 sempre traz o arquivo
+      # novo, em vez da versão de 30 dias atrás.
+      STATIC_EXPIRES: "-1"
+      MEDIA_EXPIRES: "-1"
+    restart: "no"

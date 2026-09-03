@@ -24,8 +24,10 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      # Console web do MinIO. A API (9000) fica interna, atrás do nginx.
-      - "127.0.0.1:9001:9001"
+      # Console web do MinIO, sempre preso a esta máquina. A API (9000) fica
+      # interna, atrás do nginx. A porta é configurável para que uma segunda
+      # stack (a de desenvolvimento) possa subir ao lado desta.
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
@@ -77,8 +79,13 @@ services:
       - "${HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-8080}:80"
     environment:
       MEDIA_BUCKET: ${MEDIA_BUCKET:-media}
-      # Só a variável acima é interpolada no template; $host, $scheme etc. ficam intactos.
-      NGINX_ENVSUBST_FILTER: "MEDIA_BUCKET"
+      # Por quanto tempo o navegador guarda cada coisa. O compose de
+      # desenvolvimento zera os dois para que o F5 sempre traga o arquivo novo.
+      STATIC_EXPIRES: ${STATIC_EXPIRES:-30d}
+      MEDIA_EXPIRES: ${MEDIA_EXPIRES:-7d}
+      # Só as variáveis acima são interpoladas no template; $host, $scheme etc.
+      # ficam intactos.
+      NGINX_ENVSUBST_FILTER: "MEDIA_BUCKET|STATIC_EXPIRES|MEDIA_EXPIRES"
     volumes:
       - ./docker/nginx/templates:/etc/nginx/templates:ro
       - static_files:/var/www/static:ro

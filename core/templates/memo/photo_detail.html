@@ -16,10 +16,13 @@
   <div class="photo-detail">
     <img src="{{ photo.image.url }}" alt="{{ photo.name }}" />
     <h1>{{ photo.name }}</h1>
-    {% if not is_owner %}<p class="meta" style="opacity:.85;">🔗 Compartilhada por {{ photo.owner.username }}</p>{% endif %}
+    {# A data na serifada: a anotação que se fazia no verso da cópia. #}
     <p class="meta">
       {{ photo.taken_at|date:"j \d\e F \d\e Y, H:i"|lower }}
-      {% if photo.memo %} · <a href="{{ photo.memo.get_absolute_url }}" class="btn-link">{{ photo.memo.name }}</a>{% endif %}
+      {% if photo.memo %}<a href="{{ photo.memo.get_absolute_url }}">{{ photo.memo.name }}</a>{% endif %}
+      {% if not is_owner %}
+        <span class="shared-by">Compartilhada por {{ photo.owner.username }}</span>
+      {% endif %}
     </p>
     {% if photo.description %}<p class="desc">{{ photo.description|linebreaksbr }}</p>{% endif %}
 
@@ -48,9 +51,10 @@
         {% endif %}
       </div>
     {% endif %}
+
     <div class="form-actions">
-      <a href="{% url 'core:timeline' %}" class="btn">← linha do tempo</a>
-      {% if can_edit %}<a href="{% url 'core:photo_edit' photo.pk %}" class="btn btn-solid">editar</a>{% endif %}
+      <a href="{% url 'core:timeline' %}" class="btn">Voltar à linha do tempo</a>
+      {% if can_edit %}<a href="{% url 'core:photo_edit' photo.pk %}" class="btn btn-solid">Editar</a>{% endif %}
     </div>
 
     {% include "memo/_photo_share.html" %}

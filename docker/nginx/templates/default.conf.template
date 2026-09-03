@@ -12,7 +12,7 @@ server {
     location /static/ {
         alias /var/www/static/;
         access_log off;
-        expires 30d;
+        expires ${STATIC_EXPIRES};
     }
 
     # As fotos vivem no MinIO; o nginx só repassa, para que a URL pública
@@ -26,7 +26,7 @@ server {
         proxy_hide_header x-amz-id-2;
         proxy_hide_header x-amz-request-id;
         proxy_hide_header x-amz-meta-server-side-encryption;
-        expires 7d;
+        expires ${MEDIA_EXPIRES};
     }
 
     location / {

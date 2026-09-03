@@ -10,15 +10,17 @@
 
 {% block content %}
   <h1 class="page-title">{{ memo.name }}</h1>
-  {% if not is_owner %}<p class="page-sub" style="opacity:.85;">🔗 Compartilhado por {{ memo.owner.username }}</p>{% endif %}
+  {% if not is_owner %}
+    <p class="page-sub">Compartilhado por {{ memo.owner.username }}</p>
+  {% endif %}
   {% if memo.description %}<p class="page-sub">{{ memo.description }}</p>{% endif %}
 
   <div class="section-head">
     <h2>{{ photos.count }} foto{{ photos.count|pluralize }}</h2>
     {% if can_edit %}
       <span style="display:flex; gap:0.5rem;">
-        <a href="{% url 'core:memo_edit' memo.pk %}" class="btn">editar memo</a>
-        <a href="{% url 'core:photo_upload' %}" class="btn">+ enviar foto</a>
+        <a href="{% url 'core:memo_edit' memo.pk %}" class="btn">Editar memo</a>
+        <a href="{% url 'core:photo_upload' %}" class="btn">Enviar foto</a>
       </span>
     {% endif %}
   </div>
@@ -26,7 +28,10 @@
   {% if photos %}
     {% include "memo/_photo_grid.html" with photos=photos show_memo=False %}
   {% elif can_edit %}
-    <div class="empty">Este memo ainda está vazio. <a href="{% url 'core:photo_upload' %}" class="btn-link">Adicione fotos</a>.</div>
+    <div class="empty">
+      Este memo ainda está vazio.
+      <a href="{% url 'core:photo_upload' %}" class="btn-link">Adicione as primeiras fotos</a>.
+    </div>
   {% else %}
     <div class="empty">Este memo ainda está vazio.</div>
   {% endif %}
