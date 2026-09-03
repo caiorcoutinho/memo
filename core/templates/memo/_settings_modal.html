@@ -1,0 +1,145 @@
+{% comment %}
+Botão + modal com as opções avançadas (compressão, metadados).
+
+Os campos ficam DENTRO do <dialog>, que por sua vez está dentro do <form>: como
+o diálogo continua sendo descendente do formulário no DOM, tudo é enviado
+normalmente, mesmo com o modal fechado.
+
+Espera `form` no contexto e aceita `title` e `metadata_intro`.
+{% endcomment %}
+<div class="settings-row">
+  <button type="button" class="btn settings-open" data-settings-open aria-haspopup="dialog">
+    <span class="settings-gear" aria-hidden="true">⚙</span>
+    <span class="settings-open-text">
+      <span class="settings-open-label">{{ title|default:"Opções avançadas" }}</span>
+      <span class="settings-summary" data-settings-summary></span>
+    </span>
+  </button>
+</div>
+
+<dialog class="settings-modal" data-settings-modal aria-label="{{ title|default:"Opções avançadas" }}">
+  <div class="settings-head">
+    <h2>{{ title|default:"Opções avançadas" }}</h2>
+    <button type="button" class="settings-close" data-settings-close aria-label="Fechar">×</button>
+  </div>
+
+  <div class="settings-body">
+    {% for field in form.advanced_toggles %}
+      <div class="form-row form-check">
+        {{ field }}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </div>
+      </div>
+    {% endfor %}
+    {% include "memo/_metadata_toggles.html" with intro=metadata_intro %}
+  </div>
+
+  <div class="settings-foot">
+    <button type="button" class="btn btn-solid" data-settings-close>Concluído</button>
+    <span class="helptext">As opções são salvas junto com o formulário.</span>
+  </div>
+</dialog>
+
+<style>
+  .settings-row { margin: 1rem 0; }
+  .settings-open {
+    display: flex; align-items: center; gap: 0.7rem; width: 100%;
+    text-align: left; padding: 0.7rem 0.9rem;
+  }
+  .settings-gear { font-size: 1.1rem; line-height: 1; }
+  .settings-open-text { display: flex; flex-direction: column; gap: 0.15rem; }
+  .settings-open-label { font-size: 0.9rem; }
+  .settings-summary { font-size: 0.72rem; opacity: 0.75; }
+  .settings-summary:empty { display: none; }
+
+  .settings-modal {
+    width: min(34rem, calc(100vw - 2rem));
+    max-height: min(85vh, 44rem);
+    padding: 0;
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    background: var(--card-bg);
+    color: var(--text);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+  }
+  .settings-modal::backdrop { background: rgba(0, 0, 0, 0.45); }
+  .settings-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem 1.25rem 0.8rem;
+    border-bottom: 1px solid var(--divider);
+  }
+  .settings-head h2 { margin: 0; font-size: 1rem; color: var(--title); }
+  .settings-close {
+    border: none; background: transparent; color: var(--muted);
+    font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 0.2rem;
+  }
+  .settings-close:hover { color: var(--accent); }
+  /* Rolagem só no miolo: cabeçalho e rodapé ficam sempre visíveis. */
+  .settings-body { padding: 1.1rem 1.25rem 0.5rem; overflow-y: auto; max-height: 60vh; }
+  .settings-body .form-row:last-child { margin-bottom: 0.5rem; }
+  .settings-foot {
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    padding: 0.9rem 1.25rem 1.1rem;
+    border-top: 1px solid var(--divider);
+  }
+  .settings-foot .helptext { margin-top: 0; }
+</style>
+
+<script>
+(function () {
+  document.querySelectorAll('[data-settings-modal]:not([data-bound])').forEach(function (modal) {
+    modal.setAttribute('data-bound', '1');
+    const form = modal.closest('form');
+    const scope = form || document;
+    const abrir = scope.querySelector('[data-settings-open]');
+    const resumo = scope.querySelector('[data-settings-summary]');
+
+    function open() {
+      // showModal dá o foco preso e o fechamento por Esc de graça; o fallback
+      // serve para navegadores sem suporte a <dialog>.
+      if (modal.showModal) modal.showModal();
+      else modal.setAttribute('open', '');
+    }
+    function close() {
+      if (modal.close) modal.close();
+      else modal.removeAttribute('open');
+    }
+
+    if (abrir) abrir.addEventListener('click', open);
+    modal.querySelectorAll('[data-settings-close]').forEach(function (b) {
+      b.addEventListener('click', close);
+    });
+    // Clique fora do conteúdo (no backdrop) também fecha.
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) close();
+    });
+
+    // O resumo no botão mostra o que está ligado sem precisar abrir o modal.
+    function atualizarResumo() {
+      if (!resumo) return;
+      const partes = [];
+      const compress = modal.querySelector('input[type="checkbox"][name^="compress"]');
+      if (compress) partes.push(compress.checked ? 'com compressão' : 'sem compressão');
+      const caixas = modal.querySelectorAll('[data-metadata-toggle]');
+      if (caixas.length) {
+        const marcadas = modal.querySelectorAll('[data-metadata-toggle]:checked').length;
+        if (marcadas === 0) partes.push('nenhum metadado');
+        else if (marcadas === caixas.length) partes.push('todos os metadados');
+        else partes.push(marcadas + ' de ' + caixas.length + ' metadados');
+      }
+      resumo.textContent = partes.join(' · ');
+    }
+    // Escuta no formulário inteiro: o resumo acompanha tanto os cliques dentro
+    // do modal quanto as caixas que mudam sozinhas ao trocar de memo.
+    (form || modal).addEventListener('change', atualizarResumo);
+    atualizarResumo();
+
+    // Erro em um campo escondido no modal passaria despercebido: abre na hora.
+    if (modal.querySelector('.errorlist')) open();
+  });
+})();
+</script>

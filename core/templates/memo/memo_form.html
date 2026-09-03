@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{% if memo %}Editar memo{% else %}Novo memo{% endif %}{% endblock %}
+{% block tab_memo %}{% if not memo %}active{% endif %}{% endblock %}
+{% block tab_home %}{% if memo %}active{% endif %}{% endblock %}
+{% block breadcrumb %}{% if memo %}
+  <nav class="crumbs">
+    <a href="{% url 'core:memo_home' %}">Memos</a>
+    <span class="sep">/</span><a href="{{ memo.get_absolute_url }}">{{ memo.name }}</a>
+    <span class="sep">/</span><span class="current">editar</span>
+  </nav>
+{% endif %}{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">{% if memo %}Editar memo{% else %}Novo memo{% endif %}</h1>
+  <p class="page-sub">
+    {% if memo %}Altere o nome ou a descrição, ou exclua o memo.
+    {% else %}Dê um nome ao memo para começar a organizar as fotos.{% endif %}
+  </p>
+
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="nonfield-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {# Os padrões do memo (compressão e metadados) vivem no modal de opções. #}
+    {% for field in form %}
+      {% if field.name not in form.advanced_names %}
+        <div class="form-row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% include "memo/_settings_modal.html" with title="Padrões deste memo" metadata_intro="Padrão para as fotos enviadas a este memo. Cada foto pode mudar isso na hora do envio." %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid">{% if memo %}Salvar{% else %}Criar memo{% endif %}</button>
+      <a href="{% if memo %}{{ memo.get_absolute_url }}{% else %}{% url 'core:memo_home' %}{% endif %}" class="btn-link">cancelar</a>
+    </div>
+  </form>
+
+  {% if memo %}{% include "memo/_memo_share.html" %}{% endif %}
+
+  {% if memo and is_owner %}
+    <form class="form-card" method="post" action="{% url 'core:memo_delete' memo.pk %}"
+          style="margin-top:1rem;" onsubmit="return confirmMemoDelete(this);">
+      {% csrf_token %}
+      <label style="display:flex; align-items:center; gap:0.5rem; text-transform:none; letter-spacing:0; color:var(--text); margin-bottom:1rem;">
+        <input type="checkbox" name="delete_photos" value="1" style="width:auto;" />
+        Excluir também as {{ memo.photos.count }} foto{{ memo.photos.count|pluralize }} deste memo
+      </label>
+      <button type="submit" class="btn btn-danger">Excluir memo</button>
+      <span class="helptext" style="margin-left:0.5rem;">Sem marcar, as fotos são mantidas (ficam sem memo).</span>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if memo %}
+<script>
+  function confirmMemoDelete(form) {
+    const withPhotos = form.delete_photos.checked;
+    const msg = withPhotos
+      ? 'Excluir o memo e TODAS as suas fotos? Esta ação não pode ser desfeita.'
+      : 'Excluir o memo? As fotos serão mantidas (ficam sem memo).';
+    return confirm(msg);
+  }
+</script>
+{% endif %}
+{% endblock %}

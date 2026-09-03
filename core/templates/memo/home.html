@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Memos{% endblock %}
+{% block tab_home %}active{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Nossos memos</h1>
+  <p class="page-sub">Olá, {{ user.username }} — guarde aqui as memórias de vocês.</p>
+
+  <div class="section-head">
+    <h2>Memos</h2>
+    <a href="{% url 'core:memo_create' %}" class="btn">+ novo memo</a>
+  </div>
+
+  {% if memos %}
+    <div class="memos-grid">
+      {% for memo in memos %}
+        <a href="{{ memo.get_absolute_url }}" class="memo-card">
+          <div class="memo-cover">
+            {% if memo.cover %}
+              <img src="{{ memo.cover.image.url }}" alt="{{ memo.name }}" loading="lazy" />
+            {% else %}🌸{% endif %}
+          </div>
+          <div class="card-body">
+            <div class="card-title">{{ memo.name }}</div>
+            <div class="card-meta">
+              {{ memo.photos.count }} foto{{ memo.photos.count|pluralize }}
+              {% if memo.owner_id != user.id %} · 🔗 de {{ memo.owner.username }}{% endif %}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">Nenhum memo ainda. <a href="{% url 'core:memo_create' %}" class="btn-link">Crie o primeiro</a>.</div>
+  {% endif %}
+
+  <div class="section-head">
+    <h2>Adicionadas recentemente</h2>
+    <a href="{% url 'core:timeline' %}" class="btn">ver tudo</a>
+  </div>
+
+  {% if recent_photos %}
+    {% include "memo/_photo_grid.html" with photos=recent_photos show_memo=True %}
+  {% else %}
+    <div class="empty">Nenhuma foto ainda. <a href="{% url 'core:photo_upload' %}" class="btn-link">Envie a primeira</a>.</div>
+  {% endif %}
+{% endblock %}

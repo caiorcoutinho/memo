@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Enviar foto{% endblock %}
+{% block tab_upload %}active{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Enviar foto</h1>
+  <p class="page-sub">A data é definida automaticamente pelos metadados da foto (ou pela data do arquivo). Você pode ajustá-la depois em "editar".</p>
+
+  <form id="upload-form" class="form-card" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="nonfield-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+    {# Compressão e metadados ficam no modal de opções, logo abaixo. #}
+    {% for field in form.visible_fields %}
+      {% if field.name not in form.advanced_names %}
+        <div class="form-row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% include "memo/_settings_modal.html" with title="Opções desta foto" metadata_intro="Escolha o que será lido do arquivo. O que ficar desmarcado não é guardado." %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid" id="upload-submit">Enviar</button>
+      <a href="{% url 'core:memo_home' %}" class="btn-link">cancelar</a>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Captura a data de modificação do arquivo escolhido (não vai junto no
+  // upload por padrão) para usar como fallback quando a foto não tem EXIF.
+  (function () {
+    const input = document.getElementById('id_image');
+    const hidden = document.getElementById('id_file_modified');
+    if (!input || !hidden) return;
+    input.addEventListener('change', function () {
+      const file = input.files && input.files[0];
+      hidden.value = file && file.lastModified ? file.lastModified : '';
+    });
+  })();
+
+  // Cada memo tem um padrão de compressão: ao escolher um, a caixa "comprimir"
+  // acompanha esse padrão — mas quem envia pode marcar/desmarcar depois.
+  (function () {
+    const memo = document.getElementById('id_memo');
+    const compress = document.getElementById('id_compress');
+    if (!memo || !compress) return;
+    memo.addEventListener('change', function () {
+      const opt = memo.selectedOptions && memo.selectedOptions[0];
+      const preferido = opt && opt.dataset.compress;
+      if (preferido !== undefined && preferido !== null && preferido !== '') {
+        compress.checked = preferido === '1';
+      }
+    });
+  })();
+
+  // O memo escolhido também traz seu padrão de metadados: ao trocar de memo,
+  // as caixas acompanham esse padrão — sem travar nada, quem envia decide.
+  (function () {
+    const memo = document.getElementById('id_memo');
+    const caixas = document.querySelectorAll('[data-metadata-toggle]');
+    if (!memo || !caixas.length) return;
+    memo.addEventListener('change', function () {
+      const opt = memo.selectedOptions && memo.selectedOptions[0];
+      const bruto = opt && opt.dataset.metadata;
+      if (!bruto) return;  // "Sem memo" não tem padrão: mantém a escolha atual.
+      let habilitados;
+      try {
+        habilitados = JSON.parse(bruto);
+      } catch (e) {
+        return;
+      }
+      caixas.forEach(function (caixa) {
+        caixa.checked = habilitados.indexOf(caixa.value) !== -1;
+      });
+    });
+  })();
+
+  // Estado "enviando" para fotos grandes que demoram a subir (status do sistema).
+  (function () {
+    const form = document.getElementById('upload-form');
+    const btn = document.getElementById('upload-submit');
+    if (!form || !btn) return;
+    form.addEventListener('submit', function () {
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+    });
+  })();
+</script>
+{% endblock %}

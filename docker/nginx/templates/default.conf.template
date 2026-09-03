@@ -1,0 +1,40 @@
+upstream django {
+    server web:8000;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    # Fotos originais de celular são grandes; o upload passa por aqui.
+    client_max_body_size 100M;
+
+    location /static/ {
+        alias /var/www/static/;
+        access_log off;
+        expires 30d;
+    }
+
+    # As fotos vivem no MinIO; o nginx só repassa, para que a URL pública
+    # continue sendo a do site e o MinIO não precise ser exposto.
+    location /media/ {
+        proxy_pass http://minio:9000/${MEDIA_BUCKET}/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_hide_header x-amz-id-2;
+        proxy_hide_header x-amz-request-id;
+        proxy_hide_header x-amz-meta-server-side-encryption;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+    }
+}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Editar foto{% endblock %}
+{% block breadcrumb %}
+  <nav class="crumbs">
+    <a href="{{ photo.get_absolute_url }}">{{ photo.name }}</a>
+    <span class="sep">/</span><span class="current">editar</span>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Editar foto</h1>
+  <p class="page-sub">Ajuste a data, o nome, a descrição ou o memo desta foto.</p>
+
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    <div class="form-row">
+      <img src="{{ photo.image.url }}" alt="{{ photo.name }}"
+           style="width:100%;border-radius:12px;border:1px solid var(--card-border);" />
+    </div>
+    {% if form.non_field_errors %}
+      <div class="nonfield-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {# Os metadados guardados ficam no modal de opções, logo abaixo. #}
+    {% for field in form %}
+      {% if field.name not in form.advanced_names %}
+        <div class="form-row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% include "memo/_settings_modal.html" with title="Metadados desta foto" metadata_intro="Desmarque para apagar o metadado desta foto. Marcar de volta só recupera o dado se ele ainda estiver no arquivo." %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid">Salvar</button>
+      <a href="{{ photo.get_absolute_url }}" class="btn-link">cancelar</a>
+    </div>
+  </form>
+
+  {% include "memo/_photo_share.html" %}
+
+  <form class="form-card" method="post" action="{% url 'core:photo_delete' photo.pk %}"
+        style="margin-top:1rem;"
+        onsubmit="return confirm('Excluir esta foto? Esta ação não pode ser desfeita.');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Excluir foto</button>
+  </form>
+{% endblock %}

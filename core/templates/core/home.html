@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── HERO ── */
+  .hp-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    padding: 3.25rem 1.5rem 3rem;
+    margin: 0.5rem 0 1.25rem;
+    text-align: center;
+    background:
+      radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
+      var(--card-bg);
+    box-shadow: var(--card-shadow);
+  }
+  /* Fallback para navegadores sem color-mix: o cartão sozinho já fica legível. */
+  @supports not (background: color-mix(in srgb, red 10%, transparent)) {
+    .hp-hero { background: var(--card-bg); }
+  }
+  @media (min-width: 720px) { .hp-hero { padding: 4.5rem 3rem 4rem; } }
+
+  .hp-eyebrow {
+    display: inline-block;
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--btn-color);
+    border: 1px solid var(--btn-border);
+    border-radius: 20px;
+    padding: 0.3rem 0.85rem;
+    margin-bottom: 1.4rem;
+  }
+  .hp-title {
+    font-size: clamp(1.9rem, 6.5vw, 3.4rem);
+    font-weight: 300;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    color: var(--title);
+    max-width: 16ch;
+    margin: 0 auto;
+  }
+  .hp-title em { font-style: normal; font-weight: 600; }
+  .hp-lead {
+    font-size: clamp(0.92rem, 2.2vw, 1.05rem);
+    line-height: 1.65;
+    color: var(--text);
+    opacity: 0.85;
+    max-width: 54ch;
+    margin: 1.4rem auto 0;
+  }
+  .hp-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+  .hp-cta .btn { font-size: 0.85rem; padding: 0.65rem 1.5rem; }
+
+  /* Faixa com o intervalo real coberto pelo acervo. */
+  .hp-span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-top: 2.2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--divider);
+  }
+  .hp-span strong { color: var(--title); font-weight: 600; }
+  /* No mobile o intervalo não deve quebrar entre a data e a seta. */
+  .hp-range { white-space: nowrap; }
+  .hp-span .hp-arrow { color: var(--muted); }
+
+  /* ── NÚMEROS REAIS ── */
+  .hp-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 720px) { .hp-stats { grid-template-columns: repeat(4, 1fr); } }
+  .hp-stat {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+  }
+  .hp-stat-num {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(1.7rem, 5vw, 2.4rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .hp-stat-label {
+    display: block;
+    font-size: 0.6rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.6rem;
+    line-height: 1.5;
+  }
+
+  /* ── MOSAICO DE FOTOS REAIS ── */
+  .hp-mosaic {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 720px) { .hp-mosaic { grid-template-columns: repeat(8, 1fr); } }
+  .hp-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+  }
+  .hp-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.25s ease;
+  }
+  .hp-tile:hover img { transform: scale(1.06); }
+
+  /* ── CONCEITO ── */
+  .hp-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  @media (min-width: 640px)  { .hp-cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .hp-cards { grid-template-columns: repeat(4, 1fr); } }
+  .hp-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 1.3rem 1.2rem;
+  }
+  .hp-card-icon { font-size: 1.4rem; line-height: 1; }
+  .hp-card h3 {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--title);
+    margin: 0.9rem 0 0.5rem;
+  }
+  .hp-card p {
+    font-size: 0.83rem;
+    line-height: 1.6;
+    color: var(--text);
+    opacity: 0.8;
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+  <section class="hp-hero">
+    <span class="hp-eyebrow">acervo pessoal · self-hosted</span>
+
+    <h1 class="hp-title">Suas fotos, na ordem em que a <em>vida aconteceu</em>.</h1>
+
+    <p class="hp-lead">
+      O memo guarda suas fotos no seu próprio servidor, reunidas em memos. A data de
+      cada uma vem dos metadados do arquivo — não do dia em que você fez o upload.
+      O que sobra é uma linha do tempo verdadeira dos momentos que você viveu.
+    </p>
+
+    <div class="hp-cta">
+      {% if user.is_authenticated %}
+        <a href="{% url 'core:timeline' %}" class="btn btn-solid">ver a linha do tempo</a>
+        <a href="{% url 'core:memo_home' %}" class="btn">meus memos</a>
+        <a href="{% url 'core:photo_upload' %}" class="btn">enviar foto</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-solid">entrar</a>
+        <a href="{% url 'core:register' %}" class="btn">criar conta</a>
+      {% endif %}
+    </div>
+
+    {% if first_photo_at %}
+      <p class="hp-span">
+        <span>a linha do tempo vai de</span>
+        <span class="hp-range">
+          <strong>{{ first_photo_at|date:"F \d\e Y"|lower }}</strong>
+          <span class="hp-arrow">→</span>
+          <strong>{{ last_photo_at|date:"F \d\e Y"|lower }}</strong>
+        </span>
+      </p>
+    {% else %}
+      <p class="hp-span">
+        <span>nenhuma foto guardada ainda — a linha do tempo começa no primeiro envio</span>
+      </p>
+    {% endif %}
+  </section>
+
+  <div class="hp-stats">
+    <div class="hp-stat">
+      <span class="hp-stat-num">{{ total_photos }}</span>
+      <span class="hp-stat-label">foto{{ total_photos|pluralize }} guardada{{ total_photos|pluralize }}</span>
+    </div>
+    <div class="hp-stat">
+      <span class="hp-stat-num">{{ total_memos }}</span>
+      <span class="hp-stat-label">memo{{ total_memos|pluralize }}</span>
+    </div>
+    <div class="hp-stat">
+      <span class="hp-stat-num">{{ total_months }}</span>
+      <span class="hp-stat-label">{% if total_months == 1 %}mês{% else %}meses{% endif %} na linha do tempo</span>
+    </div>
+    <div class="hp-stat">
+      <span class="hp-stat-num">{{ span_days }}</span>
+      <span class="hp-stat-label">dia{{ span_days|pluralize }} entre a 1ª e a última</span>
+    </div>
+  </div>
+
+  {% if mosaic %}
+    <div class="hp-mosaic">
+      {% for photo in mosaic %}
+        <a href="{{ photo.get_absolute_url }}" class="hp-tile"
+           title="{{ photo.name }} · {{ photo.taken_at|date:'d/m/Y' }}">
+          <img src="{{ photo.image.url }}" alt="{{ photo.name }}" loading="lazy" />
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="hp-cards">
+    <div class="hp-card">
+      <div class="hp-card-icon">🏠</div>
+      <h3>No seu servidor</h3>
+      <p>
+        Nada sai da sua infraestrutura. Django, banco e bucket rodam onde você
+        mandar — sem nuvem de terceiros lendo as suas memórias.
+      </p>
+    </div>
+    <div class="hp-card">
+      <div class="hp-card-icon">🕰️</div>
+      <h3>Data dos metadados</h3>
+      <p>
+        No envio, o memo lê o EXIF do arquivo. Sem EXIF, usa a data de modificação
+        e avisa você. A data é a do momento, não a do upload.
+      </p>
+    </div>
+    <div class="hp-card">
+      <div class="hp-card-icon">📁</div>
+      <h3>Memos, não pastas</h3>
+      <p>
+        Agrupe por viagem, por pessoa, por fase da vida. A foto vive dentro de um
+        memo e continua aparecendo na linha do tempo geral.
+      </p>
+    </div>
+    <div class="hp-card">
+      <div class="hp-card-icon">📷</div>
+      <h3>Compartilhado no ponto</h3>
+      <p>
+        Cada memo tem quem pode ver e quem pode editar. Fotos avulsas você
+        compartilha como somente leitura.
+      </p>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Linha do tempo{% endblock %}
+{% block tab_timeline %}active{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Linha do tempo</h1>
+  <p class="page-sub">Todas as fotos em ordem cronológica — das mais recentes às mais antigas.</p>
+
+  {% if groups %}
+    {% for group in groups %}
+      <h2 class="timeline-group-head">{{ group.label }}</h2>
+      {% include "memo/_photo_grid.html" with photos=group.photos show_memo=True %}
+    {% endfor %}
+  {% else %}
+    <div class="empty">Nenhuma foto ainda. <a href="{% url 'core:photo_upload' %}" class="btn-link">Envie a primeira</a>.</div>
+  {% endif %}
+{% endblock %}

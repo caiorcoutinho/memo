@@ -1,0 +1,90 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-memo}
+      POSTGRES_USER: ${POSTGRES_USER:-memo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-memo}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-memo} -d ${POSTGRES_DB:-memo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      # Console web do MinIO. A API (9000) fica interna, atrás do nginx.
+      - "127.0.0.1:9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Cria o bucket das fotos e libera leitura anônima (o nginx é quem serve /media/).
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-media}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" &&
+      mc mb --ignore-existing local/$${MEDIA_BUCKET} &&
+      mc anonymous set download local/$${MEDIA_BUCKET}
+      "
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+    volumes:
+      - static_files:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    environment:
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-media}
+      # Só a variável acima é interpolada no template; $host, $scheme etc. ficam intactos.
+      NGINX_ENVSUBST_FILTER: "MEDIA_BUCKET"
+    volumes:
+      - ./docker/nginx/templates:/etc/nginx/templates:ro
+      - static_files:/var/www/static:ro
+    depends_on:
+      - web
+      - minio
+
+volumes:
+  postgres_data:
+  minio_data:
+  static_files:

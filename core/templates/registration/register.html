@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Criar conta{% endblock %}
+
+{% block content %}
+  <h1 class="page-title" style="text-align:center;">Criar conta</h1>
+  <p class="page-sub" style="text-align:center;">Crie seu acesso ao memo de fotos.</p>
+
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="nonfield-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid">Criar conta</button>
+      <a href="{% url 'login' %}" class="btn-link">já tenho conta</a>
+    </div>
+  </form>
+{% endblock %}

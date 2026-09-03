@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ photo.name }}{% endblock %}
+{% block breadcrumb %}
+  <nav class="crumbs">
+    {% if photo.memo %}
+      <a href="{% url 'core:memo_home' %}">Memos</a>
+      <span class="sep">/</span><a href="{{ photo.memo.get_absolute_url }}">{{ photo.memo.name }}</a>
+    {% else %}
+      <a href="{% url 'core:timeline' %}">Linha do tempo</a>
+    {% endif %}
+    <span class="sep">/</span><span class="current">{{ photo.name }}</span>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <div class="photo-detail">
+    <img src="{{ photo.image.url }}" alt="{{ photo.name }}" />
+    <h1>{{ photo.name }}</h1>
+    {% if not is_owner %}<p class="meta" style="opacity:.85;">🔗 Compartilhada por {{ photo.owner.username }}</p>{% endif %}
+    <p class="meta">
+      {{ photo.taken_at|date:"j \d\e F \d\e Y, H:i"|lower }}
+      {% if photo.memo %} · <a href="{{ photo.memo.get_absolute_url }}" class="btn-link">{{ photo.memo.name }}</a>{% endif %}
+    </p>
+    {% if photo.description %}<p class="desc">{{ photo.description|linebreaksbr }}</p>{% endif %}
+
+    {% if photo.metadata_groups %}
+      {# Só os metadados que o dono deixou habilitados no envio/edição. #}
+      <div class="metadata-card">
+        <h2 class="metadata-title">Metadados</h2>
+        {% for group in photo.metadata_groups %}
+          <div class="metadata-group">
+            <h3>{{ group.label }}</h3>
+            <dl>
+              {% for rotulo, valor in group.pairs %}
+                <dt>{{ rotulo }}</dt>
+                <dd>
+                  {% if valor|slice:":4" == "http" %}
+                    <a href="{{ valor }}" target="_blank" rel="noopener">abrir no mapa</a>
+                  {% else %}{{ valor }}{% endif %}
+                </dd>
+              {% endfor %}
+            </dl>
+          </div>
+        {% endfor %}
+        {% if can_edit %}
+          <p class="helptext">Escolha o que guardar em
+            <a href="{% url 'core:photo_edit' photo.pk %}">editar</a>.</p>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="form-actions">
+      <a href="{% url 'core:timeline' %}" class="btn">← linha do tempo</a>
+      {% if can_edit %}<a href="{% url 'core:photo_edit' photo.pk %}" class="btn btn-solid">editar</a>{% endif %}
+    </div>
+
+    {% include "memo/_photo_share.html" %}
+  </div>
+{% endblock %}

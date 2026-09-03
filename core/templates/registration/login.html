@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Entrar{% endblock %}
+
+{% block content %}
+  <h1 class="page-title" style="text-align:center;">Entrar</h1>
+  <p class="page-sub" style="text-align:center;">Acesse para ver os memos de vocês.</p>
+
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="nonfield-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid">Entrar</button>
+      <a href="{% url 'core:register' %}" class="btn-link">criar conta</a>
+    </div>
+  </form>
+{% endblock %}

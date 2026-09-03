@@ -1,0 +1,32 @@
+{% comment %}Compartilhamento da foto (somente leitura) por busca de usuário.{% endcomment %}
+{% if is_owner %}
+<div class="form-card share-card">
+  <h3 class="share-title">🔗 Compartilhar foto</h3>
+  <p class="helptext" style="margin-bottom:1rem;">Pesquise pelo nome de usuário. Quem você adicionar poderá ver esta foto (somente leitura).</p>
+
+  <div class="share-group">
+    <span class="share-group-label">Com acesso</span>
+    <ul class="chip-list">
+      {% for u in photo.shared_with.all %}
+        <li class="chip">
+          <span>{{ u.username }}</span>
+          <form method="post" action="{% url 'core:photo_share' photo.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove">
+            <input type="hidden" name="user" value="{{ u.pk }}">
+            <button type="submit" class="chip-x" aria-label="Remover {{ u.username }}" title="Remover">×</button>
+          </form>
+        </li>
+      {% empty %}<li class="chip-empty">ninguém</li>{% endfor %}
+    </ul>
+  </div>
+
+  <div class="share-search" data-search-url="{% url 'core:user_search' %}"
+       data-action-url="{% url 'core:photo_share' photo.pk %}" data-roles="0"
+       data-csrf="{{ csrf_token }}">
+    <input type="text" class="share-input" placeholder="Pesquisar usuário…" autocomplete="off" aria-label="Pesquisar usuário">
+    <div class="share-results" hidden></div>
+  </div>
+</div>
+{% include "memo/_share_assets.html" %}
+{% endif %}

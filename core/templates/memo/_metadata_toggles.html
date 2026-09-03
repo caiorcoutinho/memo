@@ -1,0 +1,21 @@
+{% comment %}
+Caixas para habilitar/desabilitar, um a um, os metadados da foto.
+Espera `form` com o campo metadata_fields e, opcionalmente, `intro`.
+{% endcomment %}
+<div class="form-row">
+  <label>{{ form.metadata_fields.label }}</label>
+  {% if intro %}<span class="helptext metadata-intro">{{ intro }}</span>{% endif %}
+  <div class="metadata-toggles">
+    {% for opt in form.metadata_toggles %}
+      <label class="metadata-toggle">
+        <input type="checkbox" name="metadata_fields" value="{{ opt.key }}"
+               data-metadata-toggle{% if opt.checked %} checked{% endif %} />
+        <span class="metadata-text">
+          <span class="metadata-name">{{ opt.label }}</span>
+          <span class="metadata-help">{{ opt.help }}</span>
+        </span>
+      </label>
+    {% endfor %}
+  </div>
+  {{ form.metadata_fields.errors }}
+</div>
