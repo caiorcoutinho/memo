@@ -4,14 +4,21 @@
 
 {% block content %}
   <h1 class="page-title">Linha do tempo</h1>
-  <p class="page-sub">Todas as fotos em ordem cronológica — das mais recentes às mais antigas.</p>
+  <p class="page-sub">Todas as fotos na ordem em que foram tiradas — das mais recentes às mais antigas.</p>
 
   {% if groups %}
     {% for group in groups %}
-      <h2 class="timeline-group-head">{{ group.label }}</h2>
+      {# O mês é o cabeçalho do arquivo: serifada, em tamanho de leitura. #}
+      <h2 class="timeline-group-head">
+        {{ group.label|capfirst }}
+        <span class="count">{{ group.photos|length }} foto{{ group.photos|length|pluralize }}</span>
+      </h2>
       {% include "memo/_photo_grid.html" with photos=group.photos show_memo=True %}
     {% endfor %}
   {% else %}
-    <div class="empty">Nenhuma foto ainda. <a href="{% url 'core:photo_upload' %}" class="btn-link">Envie a primeira</a>.</div>
+    <div class="empty">
+      A linha do tempo começa no primeiro envio.
+      <a href="{% url 'core:photo_upload' %}" class="btn-link">Envie uma foto</a>.
+    </div>
   {% endif %}
 {% endblock %}

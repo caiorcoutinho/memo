@@ -1,13 +1,17 @@
-{# Grid de fotos estilo Pinterest. Espera a variável `photos`. #}
+{# Grade de fotos. Espera a variável `photos`. #}
 <div class="masonry">
   {% for photo in photos %}
     <a href="{{ photo.get_absolute_url }}" class="card">
-      <img src="{{ photo.image.url }}" alt="{{ photo.name }}" loading="lazy" />
+      <div class="card-frame">
+        <img src="{{ photo.image.url }}" alt="{{ photo.name }}" loading="lazy" />
+      </div>
       <div class="card-body">
         <div class="card-title">{{ photo.name }}</div>
-        <div class="card-meta">
-          {{ photo.taken_at|date:"d/m/Y" }}{% if show_memo and photo.memo %} · {{ photo.memo.name }}{% endif %}
-        </div>
+        {# A data vai na serifada: é a anotação no verso da cópia. #}
+        <div class="card-meta">{{ photo.taken_at|date:"j \d\e F \d\e Y"|lower }}</div>
+        {% if show_memo and photo.memo %}
+          <div class="card-meta"><span class="in-memo">em {{ photo.memo.name }}</span></div>
+        {% endif %}
       </div>
     </a>
   {% endfor %}

@@ -1,7 +1,14 @@
 {% comment %}Compartilhamento da foto (somente leitura) por busca de usuário.{% endcomment %}
 {% if is_owner %}
 <div class="form-card share-card">
-  <h3 class="share-title">🔗 Compartilhar foto</h3>
+  <h3 class="share-title">
+    <svg class="ico" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19" />
+      <circle cx="10" cy="8" r="3" />
+      <path d="M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M16 5.1a3 3 0 0 1 0 5.8" />
+    </svg>
+    Compartilhar foto
+  </h3>
   <p class="helptext" style="margin-bottom:1rem;">Pesquise pelo nome de usuário. Quem você adicionar poderá ver esta foto (somente leitura).</p>
 
   <div class="share-group">

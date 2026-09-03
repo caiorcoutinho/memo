@@ -15,7 +15,7 @@
     {% csrf_token %}
     <div class="form-row">
       <img src="{{ photo.image.url }}" alt="{{ photo.name }}"
-           style="width:100%;border-radius:12px;border:1px solid var(--card-border);" />
+           style="width:100%;border-radius:var(--r-photo);background:var(--surface-sunk);" />
     </div>
     {% if form.non_field_errors %}
       <div class="nonfield-errors">{{ form.non_field_errors }}</div>

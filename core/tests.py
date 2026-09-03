@@ -317,6 +317,14 @@ class MemoFlowTests(TestCase):
         photo = Photo.objects.get(name='ViaModal')
         self.assertEqual(photo.metadata_fields, ['taken_at'])
 
+    def test_runserver_listens_on_the_network(self):
+        """O runserver do projeto substitui o do Django e abre para a rede."""
+        from django.core.management import get_commands, load_command_class
+        # Depende de `core` vir antes do staticfiles no INSTALLED_APPS.
+        self.assertEqual(get_commands()['runserver'], 'core')
+        self.assertEqual(load_command_class('core', 'runserver').default_addr,
+                         '0.0.0.0')
+
     def test_pages_render(self):
         memo = Memo.objects.create(owner=self.user, name='X')
         photo = Photo.objects.create(owner=self.user, memo=memo, name='p',

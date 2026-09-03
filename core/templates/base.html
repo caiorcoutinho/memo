@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
   <title>{% block title %}memo{% endblock %} · memo</title>
   <script>
     // Aplica o tema salvo antes da pintura, evitando "piscar" ao navegar.
@@ -14,438 +15,643 @@
     })();
   </script>
   <style>
-    /* ── TEMA (mesma paleta da homepage) ── */
+    /* ══ IDENTIDADE ══════════════════════════════════════════════════════
+       O arquivo, não o feed. A cor de destaque é o azul da cianotipia — um
+       dos primeiros processos de cópia fotográfica. Fria, ela não briga com
+       as fotos: a cor forte da tela é sempre a das imagens. O cromo fica
+       neutro e o azul só aparece em ação, estado ativo e foco. Datas e
+       legendas vão na serifada — é o que se escrevia no verso da cópia. */
+
     :root, [data-theme="light"] {
-      --bg: #ffffff;
-      --title: #b03060;
-      --sub: #999;
-      --text: #4a3540;
-      --muted: #a98a96;
-      --btn-border: #e0a0b0;
-      --btn-color: #c0305a;
-      --btn-hover-bg: #c0305a;
-      --btn-hover-fg: #fff;
-      --divider: #f0c0d0;
-      --card-bg: #ffffff;
-      --card-border: #f2d6df;
-      --card-shadow: 0 2px 14px rgba(192,48,90,0.10);
-      --input-bg: #fff;
-      --input-border: #ead0d8;
-      --toggle-bg: #f5e6eb;
-      --toggle-icon: #b03060;
-      --accent: #c0305a;
+      color-scheme: light;
+      /* Cartão de montagem: branco fotográfico, levemente frio. */
+      --paper:        #f8f9fb;
+      --surface:      #ffffff;
+      --surface-sunk: #edf0f4;
+      --ink:          #1a2230;
+      --ink-soft:     #5c6779;
+      /* As datas usam este tom; abaixo disso ele não passa no AA. */
+      --ink-faint:    #656f80;
+      --rule:         #dfe4eb;
+      --rule-strong:  #c4ccd8;
+      --accent:       #1a4e7a;
+      --accent-hover: #123a5c;
+      --on-accent:    #ffffff;
+      --accent-wash:  rgba(26, 78, 122, 0.09);
+      --danger:       #b0342c;
+      --positive:     #2c7350;
+      --caution:      #8a6314;
+      --lift:         0 1px 2px rgba(26, 34, 48, 0.06);
+      --lift-high:    0 12px 32px -8px rgba(26, 34, 48, 0.24);
     }
 
     [data-theme="dark"] {
-      --bg: #1a1a1a;
-      --title: #ff6090;
-      --sub: #664455;
-      --text: #e6d2db;
-      --muted: #8a5e70;
-      --btn-border: #6a2840;
-      --btn-color: #ff6090;
-      --btn-hover-bg: #c0305a;
-      --btn-hover-fg: #fff;
-      --divider: #4a1830;
-      --card-bg: #221519;
-      --card-border: #3a2230;
-      --card-shadow: 0 2px 16px rgba(0,0,0,0.45);
-      --input-bg: #1e1216;
-      --input-border: #4a2335;
-      --toggle-bg: #1e0e18;
-      --toggle-icon: #ff6090;
-      --accent: #ff6090;
+      color-scheme: dark;
+      /* Câmara escura: o fundo tem pigmento, não é preto puro. */
+      --paper:        #101419;
+      --surface:      #181d24;
+      --surface-sunk: #13171d;
+      --ink:          #e6ebf2;
+      --ink-soft:     #9aa5b4;
+      --ink-faint:    #7d8898;
+      --rule:         #262d37;
+      --rule-strong:  #3a434f;
+      --accent:       #74aedc;
+      --accent-hover: #96c4e8;
+      --on-accent:    #0b1620;
+      --accent-wash:  rgba(116, 174, 220, 0.14);
+      --danger:       #f08579;
+      --positive:     #6bc095;
+      --caution:      #dba94a;
+      --lift:         0 1px 2px rgba(0, 0, 0, 0.45);
+      --lift-high:    0 16px 40px -10px rgba(0, 0, 0, 0.7);
+    }
+
+    :root {
+      --ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      /* Serifada de estilo antigo: a anotação no verso da foto. */
+      --annot: ui-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino,
+               'Book Antiqua', Georgia, serif;
+      /* Monoespaçada só onde o dado é escrito pela máquina (EXIF). */
+      --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+      /* Cantos vivos: uma cópia impressa não tem borda arredondada. */
+      --r-photo: 4px;
+      --r-ctl:   6px;
+      --r-box:   10px;
+
+      --step: 160ms;
+      --ease: cubic-bezier(0.2, 0, 0.1, 1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      transition: background 0.3s ease;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--ui);
+      font-size: 0.9375rem;
+      line-height: 1.6;
       min-height: 100vh;
-      padding-bottom: 3rem;
+      padding-bottom: 4rem;
+      -webkit-font-smoothing: antialiased;
     }
+
     a { color: inherit; text-decoration: none; }
 
-    /* ── BARRA SUPERIOR ── */
+    /* Foco visível e consistente — faltava por completo. */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ── BARRA SUPERIOR ────────────────────────────────────────────────── */
     .topbar {
       position: sticky;
       top: 0;
       z-index: 50;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      background: var(--bg);
-      border-bottom: 1px solid var(--divider);
+      gap: 0.25rem;
+      padding: 0.6rem 1rem;
+      background: color-mix(in srgb, var(--paper) 88%, transparent);
+      backdrop-filter: saturate(1.4) blur(12px);
+      border-bottom: 1px solid var(--rule);
     }
-    .brand {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: var(--title);
-      margin-right: auto;
+    @supports not (backdrop-filter: blur(1px)) {
+      .topbar { background: var(--paper); }
     }
-    .topbar .icon-btn {
-      width: 38px;
-      height: 38px;
-      flex: 0 0 auto;
-      border-radius: 50%;
-      border: 1px solid var(--btn-border);
-      background: var(--toggle-bg);
-      color: var(--toggle-icon);
-      font-size: 16px;
-      cursor: pointer;
-      transition: transform 0.2s, background 0.3s;
-    }
-    .topbar .icon-btn:hover { transform: scale(1.05); }
 
-    /* ── NAVEGAÇÃO (rolagem horizontal no mobile) ── */
+    /* Marca: os cantinhos de colar foto no álbum. */
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-right: auto;
+      padding: 0.25rem 0.15rem;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+    .brand-mark { flex: 0 0 auto; color: var(--accent); }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border-radius: var(--r-ctl);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background var(--step) var(--ease), color var(--step) var(--ease);
+    }
+    .icon-btn:hover { background: var(--surface-sunk); color: var(--ink); }
+
+    /* ── NAVEGAÇÃO ─────────────────────────────────────────────────────── */
     .tabs {
       display: flex;
-      gap: 0.5rem;
-      padding: 0.75rem 1rem 0;
+      gap: 1.25rem;
+      padding: 0 1rem;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      border-bottom: 1px solid var(--rule);
     }
     .tabs::-webkit-scrollbar { display: none; }
     .tab {
       flex: 0 0 auto;
-      font-size: 0.8rem;
-      letter-spacing: 0.04em;
-      padding: 0.4rem 0.9rem;
-      border-radius: 20px;
-      border: 1px solid var(--btn-border);
-      color: var(--btn-color);
+      position: relative;
+      padding: 0.7rem 0;
+      font-size: 0.875rem;
+      color: var(--ink-soft);
       white-space: nowrap;
-      transition: all 0.2s ease;
+      transition: color var(--step) var(--ease);
     }
-    .tab:hover { background: var(--btn-hover-bg); color: var(--btn-hover-fg); }
-    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab:hover { color: var(--ink); }
+    /* O sublinhado é o marcador; sem pílulas contornadas. */
+    .tab.active { color: var(--ink); font-weight: 550; }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--accent);
+    }
 
-    /* Aba "Enviar foto" some no mobile — vira o botão flutuante abaixo. */
+    /* "Enviar foto" some no mobile — vira o botão flutuante abaixo. */
     .upload-tab { display: none; }
     @media (min-width: 640px) { .upload-tab { display: inline-block; } }
 
-    /* ── BOTÃO DE AÇÃO FLUTUANTE (FAB) — só no mobile ── */
+    /* ── BOTÃO DE AÇÃO FLUTUANTE (só no mobile) ────────────────────────── */
     .fab {
       position: fixed;
-      right: 1.1rem;
-      bottom: 1.1rem;
+      right: 1rem;
+      bottom: 1rem;
       z-index: 60;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
+      width: 52px;
+      height: 52px;
+      border-radius: var(--r-box);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
-      line-height: 1;
       background: var(--accent);
-      color: #fff;
+      color: var(--on-accent);
       border: none;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-      text-decoration: none;
-      transition: transform 0.15s ease, filter 0.15s ease;
+      box-shadow: var(--lift-high);
+      transition: background var(--step) var(--ease);
     }
-    .fab:hover, .fab:active { color: #fff; filter: brightness(1.08); transform: scale(1.05); }
+    .fab:hover, .fab:active { background: var(--accent-hover); color: var(--on-accent); }
     @media (min-width: 640px) { .fab { display: none; } }
 
-    /* ── LAYOUT ── */
-    .container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    /* ── LAYOUT ────────────────────────────────────────────────────────── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 1.75rem 1rem; }
+
     .page-title {
-      font-size: 1.4rem;
-      font-weight: 400;
-      letter-spacing: 0.06em;
-      color: var(--title);
-      margin: 0.5rem 0 0.25rem;
+      font-size: clamp(1.5rem, 4vw, 1.9rem);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--ink);
     }
-    .page-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.25rem; }
+    .page-sub {
+      font-size: 0.9375rem;
+      color: var(--ink-soft);
+      max-width: 62ch;
+      margin-top: 0.4rem;
+    }
+    .page-title + .page-sub { margin-bottom: 2rem; }
+    .page-title:last-child { margin-bottom: 2rem; }
+
     .section-head {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
-      margin: 1.5rem 0 0.75rem;
+      gap: 1rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--rule);
     }
     .section-head h2 {
-      font-size: 0.8rem;
-      font-weight: 400;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--title);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--ink);
     }
+
+    /* A data é a protagonista do arquivo: vai na serifada, em tamanho real. */
     .timeline-group-head {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       gap: 0.75rem;
-      font-size: 0.8rem;
+      font-family: var(--annot);
+      font-size: 1.35rem;
       font-weight: 400;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--title);
-      margin: 1.75rem 0 0.9rem;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin: 2.75rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--rule);
     }
-    .timeline-group-head::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, var(--divider), transparent);
+    .timeline-group-head .count {
+      font-family: var(--ui);
+      font-size: 0.8125rem;
+      color: var(--ink-faint);
+      margin-left: auto;
     }
 
     .empty {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-      padding: 2.5rem 1rem;
-      border: 1px dashed var(--card-border);
-      border-radius: 16px;
+      color: var(--ink-soft);
+      font-size: 0.9375rem;
+      padding: 2.75rem 1.25rem;
+      background: var(--surface-sunk);
+      border-radius: var(--r-box);
     }
 
-    /* ── BOTÕES ── */
+    /* ── BOTÕES ────────────────────────────────────────────────────────── */
     .btn {
-      display: inline-block;
-      font-size: 0.8rem;
-      padding: 0.5rem 1.1rem;
-      border-radius: 22px;
-      border: 1px solid var(--btn-border);
-      background: transparent;
-      color: var(--btn-color);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.2;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--r-ctl);
+      border: 1px solid var(--rule-strong);
+      background: var(--surface);
+      color: var(--ink);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: background var(--step) var(--ease), border-color var(--step) var(--ease);
     }
-    .btn:hover { background: var(--btn-hover-bg); color: var(--btn-hover-fg); }
-    .btn-solid { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-solid:hover { filter: brightness(1.08); background: var(--accent); color: #fff; }
-    .btn-link { border: none; color: var(--btn-color); padding: 0.5rem 0; }
-    .btn-link:hover { background: none; color: var(--accent); text-decoration: underline; }
-    .btn-danger { border-color: #e0556a; color: #e0556a; }
-    .btn-danger:hover { background: #e0556a; color: #fff; }
-    .btn:disabled, button:disabled { opacity: 0.55; cursor: default; }
-    .btn:disabled:hover { background: transparent; color: var(--btn-color); }
+    .btn:hover { background: var(--surface-sunk); border-color: var(--ink-faint); }
 
-    /* ── GRID PINTEREST (masonry com CSS columns) ── */
-    .masonry {
-      column-count: 2;
-      column-gap: 0.75rem;
+    .btn-solid {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--on-accent);
+      font-weight: 550;
     }
+    .btn-solid:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+    .btn-link {
+      border: none;
+      background: none;
+      color: var(--ink-soft);
+      padding: 0.5rem 0.2rem;
+      font-weight: 500;
+    }
+    .btn-link:hover { background: none; color: var(--accent); }
+
+    .btn-danger { border-color: var(--rule-strong); color: var(--danger); background: var(--surface); }
+    .btn-danger:hover { border-color: var(--danger); background: var(--surface-sunk); }
+
+    .btn:disabled, button:disabled { opacity: 0.5; cursor: default; }
+    .btn:disabled:hover { background: var(--surface); border-color: var(--rule-strong); }
+
+    /* ── GRADE DE FOTOS (masonry com CSS columns) ──────────────────────── */
+    .masonry { column-count: 2; column-gap: 0.75rem; }
     @media (min-width: 640px)  { .masonry { column-count: 3; } }
     @media (min-width: 1024px) { .masonry { column-count: 4; } }
 
+    /* A foto ocupa o quadro inteiro; a legenda fica embaixo, discreta. */
     .card {
+      display: block;
       break-inside: avoid;
-      margin-bottom: 0.75rem;
-      border-radius: 16px;
-      overflow: hidden;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      box-shadow: var(--card-shadow);
-      transition: transform 0.18s ease;
+      margin-bottom: 1.25rem;
     }
-    .card:hover { transform: translateY(-2px); }
-    .card img { display: block; width: 100%; height: auto; }
-    .card-body { padding: 0.6rem 0.7rem 0.7rem; }
-    .card-title { font-size: 0.85rem; color: var(--text); font-weight: 600; }
-    .card-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+    .card-frame {
+      overflow: hidden;
+      border-radius: var(--r-photo);
+      background: var(--surface-sunk);
+      line-height: 0;
+    }
+    .card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      transition: transform 400ms var(--ease);
+    }
+    .card:hover img { transform: scale(1.03); }
+    .card-body { padding: 0.5rem 0.1rem 0; }
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink);
+      transition: color var(--step) var(--ease);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card:hover .card-title { color: var(--accent); }
+    /* Data e memo na serifada: a anotação no verso da cópia. */
+    .card-meta {
+      font-family: var(--annot);
+      font-size: 0.8125rem;
+      font-style: italic;
+      color: var(--ink-faint);
+      margin-top: 0.05rem;
+    }
+    .card-meta .in-memo { font-style: normal; font-family: var(--ui); font-size: 0.75rem; }
 
-    /* ── CARTÕES DE MEMO ── */
+    /* ── CARTÕES DE MEMO ───────────────────────────────────────────────── */
     .memos-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
+      gap: 1.25rem 0.85rem;
     }
     @media (min-width: 640px)  { .memos-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (min-width: 1024px) { .memos-grid { grid-template-columns: repeat(4, 1fr); } }
-    .memo-card {
-      border-radius: 16px;
-      overflow: hidden;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      box-shadow: var(--card-shadow);
-      transition: transform 0.18s ease;
-    }
-    .memo-card:hover { transform: translateY(-2px); }
+
+    .memo-card { display: block; }
     .memo-cover {
-      aspect-ratio: 1 / 1;
-      background: var(--input-bg);
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: var(--r-photo);
+      background: var(--surface-sunk);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--muted);
-      font-size: 1.8rem;
+      color: var(--ink-faint);
     }
-    .memo-cover img { width: 100%; height: 100%; object-fit: cover; }
-    .memo-card .card-body { padding: 0.55rem 0.7rem 0.7rem; }
-    .memo-card .card-meta { margin-top: 0.15rem; }
+    .memo-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 400ms var(--ease);
+    }
+    .memo-card:hover .memo-cover img { transform: scale(1.03); }
+    .memo-card .card-body { padding: 0.5rem 0.1rem 0; }
+    .memo-card:hover .card-title { color: var(--accent); }
 
-    /* ── FORMULÁRIOS ── */
+    /* ── FORMULÁRIOS ───────────────────────────────────────────────────── */
     .form-card {
-      max-width: 460px;
-      margin: 1rem auto;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      box-shadow: var(--card-shadow);
+      max-width: 30rem;
+      margin: 0 auto 1rem;
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: var(--r-box);
+      box-shadow: var(--lift);
       padding: 1.5rem;
     }
-    .form-row { margin-bottom: 1rem; }
-    .form-row label {
+    .form-row { margin-bottom: 1.15rem; }
+    .form-row > label {
       display: block;
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
+      font-size: 0.8125rem;
+      font-weight: 550;
+      color: var(--ink);
       margin-bottom: 0.35rem;
     }
     .form-row input, .form-row textarea, .form-row select {
       width: 100%;
-      font-size: 0.95rem;
+      font-size: 0.9375rem;
       font-family: inherit;
-      color: var(--text);
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 12px;
-      padding: 0.6rem 0.75rem;
+      line-height: 1.45;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--rule-strong);
+      border-radius: var(--r-ctl);
+      padding: 0.55rem 0.7rem;
+      transition: border-color var(--step) var(--ease), box-shadow var(--step) var(--ease);
     }
     .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
       outline: none;
       border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-wash);
     }
-    .form-row textarea { resize: vertical; }
-    /* Caixa de opção (ex.: comprimir imagem): rótulo ao lado, não em cima. */
+    .form-row input[type="file"] { padding: 0.45rem 0.6rem; }
+    .form-row textarea { resize: vertical; min-height: 5rem; }
+
+    /* Caixa de opção: rótulo ao lado, não em cima. */
     .form-row.form-check { display: flex; gap: 0.6rem; align-items: flex-start; }
     .form-row.form-check input[type="checkbox"] {
-      width: auto; flex: none; margin-top: 0.15rem; accent-color: var(--accent);
+      width: auto; flex: none; margin-top: 0.25rem; accent-color: var(--accent);
     }
     .form-row.form-check label {
-      text-transform: none; letter-spacing: 0; font-size: 0.9rem;
-      color: var(--text); margin-bottom: 0.2rem;
+      font-weight: 500; font-size: 0.9375rem; color: var(--ink); margin-bottom: 0.1rem;
     }
-    .form-row .helptext { display: block; font-size: 0.68rem; color: var(--muted); margin-top: 0.3rem; }
-    .form-row .errorlist { list-style: none; color: #ff6b6b; font-size: 0.72rem; margin-top: 0.3rem; }
-    .form-actions { display: flex; gap: 0.75rem; align-items: center; margin-top: 1.25rem; }
-    /* ── CAIXAS DE METADADOS (habilitar/desabilitar cada um) ── */
-    .metadata-intro { margin-bottom: 0.6rem; }
-    .metadata-toggles { display: grid; gap: 0.5rem; }
+    .form-row .helptext {
+      display: block; font-size: 0.8125rem; color: var(--ink-soft);
+      margin-top: 0.3rem; line-height: 1.45;
+    }
+    .form-row .errorlist {
+      list-style: none; color: var(--danger); font-size: 0.8125rem; margin-top: 0.3rem;
+    }
+    .form-actions {
+      display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+    .nonfield-errors {
+      color: var(--danger); font-size: 0.875rem; margin-bottom: 1rem;
+      padding-left: 0.75rem; border-left: 2px solid var(--danger);
+    }
+
+    /* ── CAIXAS DE METADADOS ───────────────────────────────────────────── */
+    .metadata-intro { margin-bottom: 0.7rem; }
+    .metadata-toggles { display: grid; gap: 0.4rem; }
     .metadata-toggle {
       display: flex;
-      gap: 0.6rem;
+      gap: 0.65rem;
       align-items: flex-start;
-      text-transform: none;
-      letter-spacing: 0;
-      color: var(--text);
+      color: var(--ink);
       margin-bottom: 0;
       padding: 0.6rem 0.7rem;
-      border: 1px solid var(--input-border);
-      border-radius: 12px;
-      background: var(--input-bg);
+      border: 1px solid var(--rule);
+      border-radius: var(--r-ctl);
+      background: var(--paper);
       cursor: pointer;
+      transition: border-color var(--step) var(--ease), background var(--step) var(--ease);
     }
-    .metadata-toggle:hover { border-color: var(--accent); }
+    .metadata-toggle:hover { border-color: var(--rule-strong); }
+    .metadata-toggle:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--accent-wash);
+    }
     .metadata-toggle input[type="checkbox"] {
-      width: auto;
-      margin-top: 0.15rem;
-      flex: none;
-      accent-color: var(--accent);
+      width: auto; margin-top: 0.25rem; flex: none; accent-color: var(--accent);
     }
     .metadata-text { display: block; }
-    .metadata-name { display: block; font-size: 0.9rem; }
-    .metadata-help { display: block; font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+    .metadata-name { display: block; font-size: 0.9375rem; font-weight: 500; }
+    .metadata-help {
+      display: block; font-size: 0.8125rem; color: var(--ink-soft);
+      margin-top: 0.1rem; line-height: 1.4;
+    }
 
-    /* ── METADADOS NA TELA DA FOTO ── */
+    /* ── METADADOS NA TELA DA FOTO ─────────────────────────────────────── */
     .metadata-card {
-      margin-top: 1.25rem;
-      padding: 1rem 1.15rem;
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      background: var(--card-bg);
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
       text-align: left;
     }
     .metadata-title {
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 0 0 1rem;
     }
-    .metadata-group + .metadata-group { margin-top: 0.85rem; }
-    .metadata-group h3 { font-size: 0.85rem; margin: 0 0 0.3rem; color: var(--text); }
+    .metadata-group + .metadata-group { margin-top: 1.1rem; }
+    .metadata-group h3 {
+      font-size: 0.8125rem; font-weight: 600; margin: 0 0 0.35rem; color: var(--ink-soft);
+    }
     .metadata-group dl {
       display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.15rem 0.75rem;
+      grid-template-columns: minmax(6.5rem, auto) 1fr;
+      gap: 0.2rem 1rem;
       margin: 0;
-      font-size: 0.8rem;
+      font-size: 0.8125rem;
     }
-    .metadata-group dt { color: var(--muted); }
-    .metadata-group dd { margin: 0; color: var(--text); }
-    .metadata-card .helptext { display: block; font-size: 0.68rem; color: var(--muted); margin: 0.75rem 0 0; }
+    .metadata-group dt { color: var(--ink-faint); }
+    /* O EXIF é escrito pela máquina — e todo fotógrafo o lê em monoespaçada. */
+    .metadata-group dd {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 0.78125rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .metadata-group dd a { color: var(--accent); text-decoration: underline; }
+    .metadata-card .helptext {
+      display: block; font-size: 0.8125rem; color: var(--ink-soft); margin: 1rem 0 0;
+    }
+    .metadata-card .helptext a { color: var(--accent); text-decoration: underline; }
 
-    .nonfield-errors { color: #ff6b6b; font-size: 0.8rem; margin-bottom: 1rem; }
+    /* ── MIGALHAS ──────────────────────────────────────────────────────── */
+    .crumbs {
+      font-size: 0.8125rem;
+      color: var(--ink-faint);
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .crumbs a { color: var(--ink-soft); }
+    .crumbs a:hover { color: var(--accent); }
+    .crumbs .sep { margin: 0 0.45rem; color: var(--rule-strong); }
+    .crumbs .current { color: var(--ink); }
 
-    /* ── MIGALHAS (breadcrumb) ── */
-    .crumbs { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.9rem; }
-    .crumbs a { color: var(--btn-color); }
-    .crumbs a:hover { text-decoration: underline; }
-    .crumbs .sep { margin: 0 0.4rem; color: var(--divider); }
-    .crumbs .current { color: var(--text); }
-
-    /* ── MENSAGENS ── */
-    .messages { list-style: none; margin-bottom: 1rem; }
+    /* ── MENSAGENS ─────────────────────────────────────────────────────── */
+    .messages { list-style: none; margin-bottom: 1.5rem; }
     .msg {
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
-      font-size: 0.85rem;
+      font-size: 0.875rem;
       padding: 0.7rem 0.9rem;
-      border-radius: 12px;
+      border-radius: var(--r-ctl);
       margin-bottom: 0.5rem;
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
-      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      /* A cor do estado vive na faixa lateral, não no contorno inteiro. */
+      border-left: 3px solid var(--ink-faint);
+      color: var(--ink);
+      box-shadow: var(--lift);
     }
     .msg span { flex: 1; }
     .msg-close {
       flex: 0 0 auto;
       border: none;
       background: none;
-      color: var(--muted);
-      font-size: 1.1rem;
+      color: var(--ink-faint);
+      font-size: 1.15rem;
       line-height: 1;
       cursor: pointer;
-      padding: 0;
+      padding: 0 0.15rem;
+      border-radius: 3px;
     }
-    .msg-close:hover { color: var(--text); }
-    .msg.success { border-color: #4caf7d; }
-    .msg.warning { border-color: #d99b3a; }
-    .msg.error   { border-color: #e0556a; }
+    .msg-close:hover { color: var(--ink); }
+    .msg.success { border-left-color: var(--positive); }
+    .msg.warning { border-left-color: var(--caution); }
+    .msg.error   { border-left-color: var(--danger); }
 
-    /* ── DETALHE DA FOTO ── */
-    .photo-detail { max-width: 720px; margin: 0 auto; }
+    /* ── DETALHE DA FOTO ───────────────────────────────────────────────── */
+    .photo-detail { max-width: 44rem; margin: 0 auto; }
     .photo-detail img {
       width: 100%;
       height: auto;
-      border-radius: 18px;
-      border: 1px solid var(--card-border);
-      box-shadow: var(--card-shadow);
+      border-radius: var(--r-photo);
+      background: var(--surface-sunk);
     }
-    .photo-detail h1 { font-size: 1.3rem; color: var(--title); font-weight: 500; margin: 1rem 0 0.3rem; }
-    .photo-detail .meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
-    .photo-detail p.desc { font-size: 0.95rem; color: var(--text); line-height: 1.5; }
+    .photo-detail h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin: 1.25rem 0 0.2rem;
+    }
+    .photo-detail .meta {
+      font-family: var(--annot);
+      font-style: italic;
+      font-size: 0.9375rem;
+      color: var(--ink-soft);
+      margin-bottom: 1rem;
+    }
+    .photo-detail .meta a { color: var(--accent); font-style: normal; font-family: var(--ui); font-size: 0.875rem; }
+    .photo-detail p.desc { font-size: 1rem; color: var(--ink); line-height: 1.65; max-width: 68ch; }
+    .photo-detail .shared-by {
+      font-family: var(--ui); font-style: normal; font-size: 0.8125rem; color: var(--ink-faint);
+    }
+
+    /* ── ENTRAR / CRIAR CONTA ──────────────────────────────────────────── */
+    .auth { max-width: 30rem; margin: 1.5rem auto 0; }
+    .auth h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+    }
+    .auth-sub { color: var(--ink-soft); margin: 0.3rem 0 1.5rem; }
+    .auth .form-card { margin: 0; }
+
+    /* Ícones inline: um traço só, herdando a cor do texto. */
+    .ico { flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 1.6;
+           stroke-linecap: round; stroke-linejoin: round; }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
   <header class="topbar">
-    <a href="{% url 'core:home' %}" class="brand">memo</a>
+    <a href="{% url 'core:home' %}" class="brand">
+      {# Os cantinhos de colar foto no álbum. #}
+      <svg class="brand-mark" width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="1.5"
+              fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.45" />
+        <path d="M3.25 10.5V4.75a1.5 1.5 0 0 1 1.5-1.5h5.75z" fill="currentColor" />
+        <path d="M20.75 13.5v5.75a1.5 1.5 0 0 1-1.5 1.5H13.5z" fill="currentColor" />
+      </svg>
+      <span>memo</span>
+    </a>
     {% if user.is_authenticated %}
       <form action="{% url 'logout' %}" method="post" style="display:inline;">
         {% csrf_token %}
-        <button type="submit" class="btn btn-link" title="Sair">sair</button>
+        <button type="submit" class="icon-btn" title="Sair" aria-label="Sair">
+          <svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2" />
+            <path d="M19 12H9m10 0-3.5-3.5M19 12l-3.5 3.5" />
+          </svg>
+        </button>
       </form>
     {% endif %}
-    <button id="theme-toggle" class="icon-btn" aria-label="Alternar tema">🌙</button>
+    <button id="theme-toggle" class="icon-btn" aria-label="Alternar tema"></button>
   </header>
 
   {% if user.is_authenticated %}
@@ -474,11 +680,9 @@
 
   {% if user.is_authenticated %}
     <a href="{% url 'core:photo_upload' %}" class="fab" aria-label="Enviar foto" title="Enviar foto">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-        <path d="M21 15l-5-5L5 21"></path>
+      <svg class="ico" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.7" aria-hidden="true">
+        <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.3-.75l.9-1.5A1.5 1.5 0 0 1 10.2 4h3.6a1.5 1.5 0 0 1 1.3.75l.9 1.5A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
+        <path d="M12 10v5m-2.5-2.5h5" />
       </svg>
     </a>
   {% endif %}
@@ -487,14 +691,23 @@
     (function () {
       const html = document.documentElement;
       const toggle = document.getElementById('theme-toggle');
-      const icon = () => html.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
+      const MOON = '<svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">'
+        + '<path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.3 8.3 0 1 0 20 14.2z"/></svg>';
+      const SUN = '<svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">'
+        + '<circle cx="12" cy="12" r="4"/>'
+        + '<path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.5 1.5m11.2 11.2 1.5 1.5M19.1 4.9l-1.5 1.5M6.4 17.6l-1.5 1.5"/></svg>';
+      const paint = () => {
+        const light = html.getAttribute('data-theme') === 'light';
+        toggle.innerHTML = light ? SUN : MOON;
+        toggle.title = light ? 'Mudar para o tema escuro' : 'Mudar para o tema claro';
+      };
       if (toggle) {
-        toggle.textContent = icon();
+        paint();
         toggle.addEventListener('click', () => {
           const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
           html.setAttribute('data-theme', next);
           try { localStorage.setItem('memo-theme', next); } catch (e) {}
-          toggle.textContent = icon();
+          paint();
         });
       }
       // Mensagens dispensáveis (controle do usuário).

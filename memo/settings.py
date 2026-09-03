@@ -37,9 +37,13 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env_bool('DJANGO_DEBUG', True)
 
+# Em desenvolvimento o site é aberto de outros aparelhos da rede (o celular,
+# outro computador) e o IP da máquina muda de rede para rede — aceitar qualquer
+# Host evita ter que fixar IP aqui. Com DEBUG desligado a lista volta a ser
+# explícita: o deploy define DJANGO_ALLOWED_HOSTS, que sempre tem preferência.
 ALLOWED_HOSTS = _env_list(
     'DJANGO_ALLOWED_HOSTS',
-    'localhost,127.0.0.1,192.168.10.58,192.168.15.5,fofuchinha.caiorcoutinho.com.br',
+    '*' if DEBUG else 'localhost,127.0.0.1,fofuchinha.caiorcoutinho.com.br',
 )
 
 CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
@@ -52,13 +56,16 @@ USE_X_FORWARDED_HOST = True
 # Application definition
 
 INSTALLED_APPS = [
+    # `core` vem antes do staticfiles para que o runserver daqui (que escuta em
+    # 0.0.0.0) substitua o do Django: em nomes de comando repetidos, vence o
+    # app listado primeiro.
+    'core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core',
 ]
 
 MIDDLEWARE = [

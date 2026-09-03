@@ -46,7 +46,7 @@
     <form class="form-card" method="post" action="{% url 'core:memo_delete' memo.pk %}"
           style="margin-top:1rem;" onsubmit="return confirmMemoDelete(this);">
       {% csrf_token %}
-      <label style="display:flex; align-items:center; gap:0.5rem; text-transform:none; letter-spacing:0; color:var(--text); margin-bottom:1rem;">
+      <label style="display:flex; align-items:center; gap:0.5rem; font-weight:400; color:var(--ink); margin-bottom:1rem;">
         <input type="checkbox" name="delete_photos" value="1" style="width:auto;" />
         Excluir também as {{ memo.photos.count }} foto{{ memo.photos.count|pluralize }} deste memo
       </label>
