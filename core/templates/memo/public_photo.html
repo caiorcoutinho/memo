@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ photo.name }}{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex, nofollow" />{% endblock %}
+
+{% block content %}
+  <div class="photo-detail">
+    {% include "memo/_public_banner.html" %}
+    {# Sem `is_owner` nem `can_edit`: a página aberta é só leitura. #}
+    {% include "memo/_photo_article.html" with shared_by=link.created_by.username %}
+
+    {% if link.memo_id %}
+      <div class="form-actions">
+        <a href="{{ link.get_absolute_url }}" class="btn">Voltar a {{ link.memo.name }}</a>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

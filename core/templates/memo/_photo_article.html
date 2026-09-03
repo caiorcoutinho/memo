@@ -1,0 +1,45 @@
+{% comment %}
+A foto em si: imagem, título, data, descrição e metadados. Usada na tela de
+detalhe (com login) e na página de link público, que não passa `is_owner` nem
+`can_edit` — sem eles, nada de editar ou compartilhar aparece.
+
+Aceita `memo_url` (para linkar o memo de onde a foto veio) e `shared_by`.
+{% endcomment %}
+<img src="{{ photo.image.url }}" alt="{{ photo.name }}" />
+<h1>{{ photo.name }}</h1>
+{# A data na serifada: a anotação que se fazia no verso da cópia. #}
+<p class="meta">
+  {{ photo.taken_at|date:"j \d\e F \d\e Y, H:i"|lower }}
+  {% if memo_url %}<a href="{{ memo_url }}">{{ photo.memo.name }}</a>{% endif %}
+  {% if shared_by %}<span class="shared-by">Compartilhada por {{ shared_by }}</span>{% endif %}
+</p>
+{% if photo.description %}<p class="desc">{{ photo.description|linebreaksbr }}</p>{% endif %}
+
+{% url 'core:photo_share' photo.pk as photo_share_url %}
+{% include "memo/_share_dialog.html" with obj=photo kind="photo" share_action=photo_share_url %}
+
+{% if photo.metadata_groups %}
+  {# Só os metadados que o dono deixou habilitados no envio/edição. #}
+  <div class="metadata-card">
+    <h2 class="metadata-title">Metadados</h2>
+    {% for group in photo.metadata_groups %}
+      <div class="metadata-group">
+        <h3>{{ group.label }}</h3>
+        <dl>
+          {% for rotulo, valor in group.pairs %}
+            <dt>{{ rotulo }}</dt>
+            <dd>
+              {% if valor|slice:":4" == "http" %}
+                <a href="{{ valor }}" target="_blank" rel="noopener">abrir no mapa</a>
+              {% else %}{{ valor }}{% endif %}
+            </dd>
+          {% endfor %}
+        </dl>
+      </div>
+    {% endfor %}
+    {% if can_edit %}
+      <p class="helptext">Escolha o que guardar em
+        <a href="{% url 'core:photo_edit' photo.pk %}">editar</a>.</p>
+    {% endif %}
+  </div>
+{% endif %}

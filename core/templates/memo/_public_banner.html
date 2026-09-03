@@ -1,0 +1,28 @@
+{% comment %}Faixa que avisa em que condições esta página está aberta. Espera `link`.{% endcomment %}
+<div class="public-banner">
+  <svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M10.6 13.4a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.3 1.3" />
+    <path d="M13.4 10.6a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.3-1.3" />
+  </svg>
+  <span>
+    Link público de {{ link.created_by.username }} ·
+    {% if link.expires_at %}
+      expira em {{ link.expires_at|timeuntil }} ({{ link.expires_at|date:"d/m/Y, H:i" }})
+    {% else %}
+      sem prazo de expiração
+    {% endif %}
+  </span>
+</div>
+<style>
+  .public-banner {
+    display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+    margin-bottom: 1.5rem; padding: 0.6rem 0.85rem;
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--r-ctl);
+    background: var(--surface-sunk);
+    font-family: var(--annot); font-style: italic;
+    font-size: 0.875rem; color: var(--ink-soft);
+  }
+  .public-banner .ico { color: var(--ink-faint); font-style: normal; }
+</style>

@@ -38,7 +38,8 @@
     </div>
   </form>
 
-  {% include "memo/_photo_share.html" %}
+  {% url 'core:photo_share' photo.pk as photo_share_url %}
+  {% include "memo/_share_dialog.html" with obj=photo kind="photo" share_action=photo_share_url %}
 
   <form class="form-card" method="post" action="{% url 'core:photo_delete' photo.pk %}"
         style="margin-top:1rem;"

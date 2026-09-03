@@ -1,7 +1,13 @@
-{# Grade de fotos. Espera a variável `photos`. #}
+{% comment %}Grade de fotos. Espera a variável `photos`.
+Com `public_token`, cada foto aponta para a página aberta do link.{% endcomment %}
 <div class="masonry">
   {% for photo in photos %}
-    <a href="{{ photo.get_absolute_url }}" class="card">
+    {% if public_token %}
+      {% url 'core:public_share_photo' public_token photo.pk as photo_url %}
+    {% else %}
+      {% url 'core:photo_detail' photo.pk as photo_url %}
+    {% endif %}
+    <a href="{{ photo_url }}" class="card">
       <div class="card-frame">
         <img src="{{ photo.image.url }}" alt="{{ photo.name }}" loading="lazy" />
       </div>

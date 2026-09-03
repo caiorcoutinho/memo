@@ -40,7 +40,10 @@
     </div>
   </form>
 
-  {% if memo %}{% include "memo/_memo_share.html" %}{% endif %}
+  {% if memo %}
+    {% url 'core:memo_share' memo.pk as memo_share_url %}
+    {% include "memo/_share_dialog.html" with obj=memo kind="memo" share_action=memo_share_url %}
+  {% endif %}
 
   {% if memo and is_owner %}
     <form class="form-card" method="post" action="{% url 'core:memo_delete' memo.pk %}"

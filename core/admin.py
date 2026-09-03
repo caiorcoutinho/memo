@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Memo, Photo
+from .models import Memo, Photo, ShareLink
 
 
 @admin.register(Memo)
@@ -18,3 +18,10 @@ class PhotoAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     date_hierarchy = 'taken_at'
     filter_horizontal = ('shared_with',)
+
+
+@admin.register(ShareLink)
+class ShareLinkAdmin(admin.ModelAdmin):
+    list_display = ('token', 'target', 'created_by', 'created_at', 'expires_at')
+    list_filter = ('created_by',)
+    search_fields = ('token',)
