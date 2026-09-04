@@ -86,6 +86,13 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* O reset acima zera a margem de tudo, inclusive a do elemento dialog — e
+       é justamente o `margin: auto` que o navegador aplica que centraliza um
+       modal aberto com showModal(). Sem devolvê-lo, o modal encosta no canto
+       superior esquerdo da tela. (Sem escrever a tag com os sinais de menor e
+       maior: os testes fatiam o HTML procurando a abertura dela.) */
+    dialog { margin: auto; }
+
     html { -webkit-text-size-adjust: 100%; }
 
     body {
